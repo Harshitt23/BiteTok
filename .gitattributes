@@ -1,2 +1,0 @@
-*.mp4 filter=lfs diff=lfs merge=lfs -text
-Videos/4057975-uhd_2160_4096_25fps.mp4 filter=lfs diff=lfs merge=lfs -text
