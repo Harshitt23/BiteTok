@@ -87,7 +87,6 @@ function logoutUser(req, res) {
     });
 }
 
-
 async function registerFoodPartner(req, res) {
 
     const { name, email, password, phone, address, contactName } = req.body;
@@ -108,9 +107,6 @@ async function registerFoodPartner(req, res) {
         name,
         email,
         password: hashedPassword,
-        phone,
-        address,
-        contactName
     })
 
     const token = jwt.sign({
@@ -125,9 +121,6 @@ async function registerFoodPartner(req, res) {
             _id: foodPartner._id,
             email: foodPartner.email,
             name: foodPartner.name,
-            address: foodPartner.address,
-            contactName: foodPartner.contactName,
-            phone: foodPartner.phone
         }
     })
 
