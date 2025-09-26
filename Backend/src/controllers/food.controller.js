@@ -5,7 +5,9 @@ async function createFood(req, res) {
    
     console.log(req.foodPartner)
 
-    res.send("food item created")
+    console.log(req.body)
+    
+     res.send("food item created")
 
 }
 
