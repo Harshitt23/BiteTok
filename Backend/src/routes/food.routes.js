@@ -32,4 +32,9 @@ router.get("/",
     authMiddleware.authUserMiddleware,
     foodController.getFoodItems)
 
+/* DELETE /api/food/cleanup [protected] - Remove duplicate food items */
+router.delete("/cleanup",
+    authMiddleware.authUserMiddleware,
+    foodController.deleteDuplicateFoodItems)
+
 module.exports = router;

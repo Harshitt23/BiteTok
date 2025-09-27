@@ -85,7 +85,63 @@ async function getFoodItems(req, res) {
     }
 }
 
+async function deleteDuplicateFoodItems(req, res) {
+    try {
+        console.log("🧹 Starting duplicate cleanup...")
+        
+        // Find all food items
+        const allFoodItems = await foodModel.find({})
+        console.log(`📊 Found ${allFoodItems.length} total food items`)
+        
+        // Group by name and description to find duplicates
+        const grouped = {}
+        allFoodItems.forEach(item => {
+            const key = `${item.name}-${item.description}`
+            if (!grouped[key]) {
+                grouped[key] = []
+            }
+            grouped[key].push(item)
+        })
+        
+        let duplicatesToDelete = []
+        let uniqueItems = []
+        
+        // Find duplicates (keep the first one, delete the rest)
+        Object.values(grouped).forEach(group => {
+            if (group.length > 1) {
+                uniqueItems.push(group[0]) // Keep the first one
+                duplicatesToDelete.push(...group.slice(1)) // Delete the rest
+            } else {
+                uniqueItems.push(group[0])
+            }
+        })
+        
+        console.log(`✅ Unique items to keep: ${uniqueItems.length}`)
+        console.log(`🗑️ Duplicates to delete: ${duplicatesToDelete.length}`)
+        
+        if (duplicatesToDelete.length > 0) {
+            // Delete duplicates
+            const deleteIds = duplicatesToDelete.map(item => item._id)
+            await foodModel.deleteMany({ _id: { $in: deleteIds } })
+            console.log(`✅ Deleted ${duplicatesToDelete.length} duplicate items`)
+        }
+        
+        res.status(200).json({
+            message: "Duplicate cleanup completed",
+            uniqueItems: uniqueItems.length,
+            duplicatesDeleted: duplicatesToDelete.length
+        })
+        
+    } catch (error) {
+        console.error("❌ Error cleaning duplicates:", error)
+        res.status(500).json({
+            message: "Internal server error"
+        })
+    }
+}
+
 module.exports = {
     createFood,
-    getFoodItems
+    getFoodItems,
+    deleteDuplicateFoodItems
 }
