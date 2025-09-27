@@ -56,11 +56,33 @@ async function createFood(req, res) {
 }
 
 async function getFoodItems(req, res) {
-    const foodItems = await foodModel.find({})
-    res.status(200).json({
-        message: "Food items fetched successfully",
-        foodItems
-    })
+    try {
+        // Debug: Log what we receive
+        console.log("🔍 GET /api/food - Request received")
+        console.log("🍪 Cookies:", req.cookies)
+        console.log("👤 User from middleware:", req.user)
+        
+        const foodItems = await foodModel.find({}).populate('foodPartner', 'name email')
+        
+        const response = {
+            message: "Food items fetched successfully",
+            foodItems
+        }
+        
+        console.log("📋 Food items found:", foodItems.length)
+        console.log("📊 Food items details:")
+        foodItems.forEach((item, index) => {
+            console.log(`  ${index + 1}. ${item.name} - Video: ${item.video.substring(0, 50)}...`)
+        })
+        console.log("✅ GET /api/food response:", JSON.stringify(response, null, 2))
+        
+        res.status(200).json(response)
+    } catch (error) {
+        console.error("❌ Error fetching food items:", error)
+        res.status(500).json({
+            message: "Internal server error"
+        })
+    }
 }
 
 module.exports = {
