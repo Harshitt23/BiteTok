@@ -16,14 +16,14 @@ router.post('/',
     foodController.createFood)
 
 /* POST /api/food/test [unprotected - for testing]*/
-router.post('/test',
-    upload.single("video"),
-    (req, res) => {
-        console.log('=== TEST ROUTE ===');
-        console.log('req.body:', req.body);
-        console.log('req.file:', req.file);
-        res.json({ body: req.body, file: req.file });
-    })
+// router.post('/test',
+//     upload.single("video"),
+//     (req, res) => {
+//         console.log('=== TEST ROUTE ===');
+//         console.log('req.body:', req.body);
+//         console.log('req.file:', req.file);
+//         res.json({ body: req.body, file: req.file });
+//     })
 
 
 module.exports = router;
