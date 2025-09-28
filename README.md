@@ -1,4 +1,4 @@
-# 🍽️ Food View
+# 🍽️ BiteTok – TikTok vibes but with food.
 A modern, full-stack food video sharing platform inspired by YouTube Shorts and TikTok, designed specifically for food enthusiasts and culinary creators.
 
 ## 🌟 Overview
