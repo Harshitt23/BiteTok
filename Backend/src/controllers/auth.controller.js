@@ -4,24 +4,41 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 async function registerUser(req, res) {
+    try {
+        const { firstName, lastName, email, phone, address, password } = req.body;
 
-    const { fullName, email, password } = req.body;
+        // Validate required fields
+        if (!firstName || !lastName || !email || !phone || !address || !password) {
+            return res.status(400).json({
+                message: "All fields are required"
+            })
+        }
 
-    const isUserAlreadyExists = await userModel.findOne({
-        email
-    })
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                message: "Invalid email format"
+            })
+        }
 
-    if (isUserAlreadyExists) {
-        return res.status(400).json({
-            message: "User already exists"
+        const isUserAlreadyExists = await userModel.findOne({
+            email
         })
-    }
+
+        if (isUserAlreadyExists) {
+            return res.status(400).json({
+                message: "User already exists"
+            })
+        }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await userModel.create({
-        fullName,
+        fullName: `${firstName} ${lastName}`,
         email,
+        phone,
+        address,
         password: hashedPassword
     })
 
@@ -31,15 +48,23 @@ async function registerUser(req, res) {
 
     res.cookie("token", token)
 
-    res.status(201).json({
-        message: "User registered successfully",
-        user: {
-            _id: user._id,
-            email: user.email,
-            fullName: user.fullName
-        }
-    })
+        res.status(201).json({
+            message: "User registered successfully",
+            user: {
+                _id: user._id,
+                email: user.email,
+                fullName: user.fullName,
+                phone: user.phone,
+                address: user.address
+            }
+        })
 
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({
+            message: "Internal server error during registration"
+        })
+    }
 }
 
 async function loginUser(req, res) {
@@ -75,7 +100,9 @@ async function loginUser(req, res) {
         user: {
             _id: user._id,
             email: user.email,
-            fullName: user.fullName
+            fullName: user.fullName,
+            phone: user.phone,
+            address: user.address
         }
     })
 }
@@ -89,7 +116,7 @@ function logoutUser(req, res) {
 
 async function registerFoodPartner(req, res) {
 
-    const { name, email, password, phone, address, contactName } = req.body;
+    const { businessName, contactName, phone, email, address, city, password } = req.body;
 
     const isAccountAlreadyExists = await foodPartnerModel.findOne({
         email
@@ -104,8 +131,12 @@ async function registerFoodPartner(req, res) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const foodPartner = await foodPartnerModel.create({
-        name,
+        businessName,
+        contactName,
+        phone,
         email,
+        address,
+        city,
         password: hashedPassword,
     })
 
@@ -120,7 +151,11 @@ async function registerFoodPartner(req, res) {
         foodPartner: {
             _id: foodPartner._id,
             email: foodPartner.email,
-            name: foodPartner.name,
+            businessName: foodPartner.businessName,
+            contactName: foodPartner.contactName,
+            phone: foodPartner.phone,
+            address: foodPartner.address,
+            city: foodPartner.city
         }
     })
 
@@ -159,7 +194,11 @@ async function loginFoodPartner(req, res) {
         foodPartner: {
             _id: foodPartner._id,
             email: foodPartner.email,
-            name: foodPartner.name
+            businessName: foodPartner.businessName,
+            contactName: foodPartner.contactName,
+            phone: foodPartner.phone,
+            address: foodPartner.address,
+            city: foodPartner.city
         }
     })
 }
