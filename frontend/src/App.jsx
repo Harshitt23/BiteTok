@@ -37,7 +37,7 @@ function AppContent() {
             muted 
             playsInline
           >
-            <source src="/videos/6829356-uhd_3840_2160_25fps.mp4" type="video/mp4" />
+            <source src="/videos/horizontal/6829356-uhd_3840_2160_25fps.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
           <video 
@@ -47,7 +47,7 @@ function AppContent() {
             muted 
             playsInline
           >
-            <source src="/videos/4667165-uhd_4096_2160_25fps.mp4" type="video/mp4" />
+            <source src="/videos/horizontal/4667165-uhd_4096_2160_25fps.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
           <video 
@@ -57,7 +57,7 @@ function AppContent() {
             muted 
             playsInline
           >
-            <source src="/videos/3196094-uhd_3840_2160_25fps.mp4" type="video/mp4" />
+            <source src="/videos/horizontal/3196094-uhd_3840_2160_25fps.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
           <video 
@@ -67,7 +67,7 @@ function AppContent() {
             muted 
             playsInline
           >
-            <source src="/videos/8849057-uhd_3840_2160_30fps.mp4" type="video/mp4" />
+            <source src="/videos/horizontal/8849057-uhd_3840_2160_30fps.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         </>

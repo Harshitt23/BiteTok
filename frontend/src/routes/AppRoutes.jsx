@@ -19,6 +19,7 @@ const AppRoutes = () => {
       <Route path="/food-partner/login" element={<PartnerLogin />} />
       <Route path="/food-partner/create" element={<CreateFoodPartner />} />
       <Route path="/food-partner/home" element={<FoodPartnerHome />} />
+      <Route path="/home" element={<Home />} />
       <Route path="*" element={<Navigate to="/user/login" replace />} />
     </Routes>
   )
