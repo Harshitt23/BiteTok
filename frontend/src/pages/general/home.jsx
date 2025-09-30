@@ -182,13 +182,6 @@ const Home = () => {
 
   return (
     <div className={`reel-container ${theme}`} ref={containerRef} onScroll={handleScroll}>
-      {/* Debug info */}
-      <div style={{ position: 'fixed', top: '10px', left: '10px', background: 'rgba(0,0,0,0.8)', color: 'white', padding: '10px', zIndex: 9999 }}>
-        Current Video: {currentVideoIndex + 1} / {foodVideos.length}
-        <br />
-        URL: {foodVideos[currentVideoIndex]?.videoUrl}
-      </div>
-      
       {foodVideos.map((video, index) => (
         <div key={video.id} className="reel-video-container">
           <video
@@ -201,7 +194,7 @@ const Home = () => {
               display: index === currentVideoIndex ? 'block' : 'none',
               width: '100%',
               height: '100%',
-              objectFit: 'cover'
+              objectFit: 'contain'
             }}
             onError={(e) => {
               console.error(`Video ${video.id} failed to load:`, e);

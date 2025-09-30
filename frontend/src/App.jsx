@@ -13,8 +13,8 @@ function AppContent() {
   
   const location = useLocation()
   
-  // Show video background only on auth pages (login/register)
-  const showVideoBackground = location.pathname.includes('/user/login') || location.pathname.includes('/user/register') || location.pathname.includes('/food-partner/login') || location.pathname.includes('/food-partner/register')
+  // Show video background on auth pages and food creation page
+  const showVideoBackground = location.pathname.includes('/user/login') || location.pathname.includes('/user/register') || location.pathname.includes('/food-partner/login') || location.pathname.includes('/food-partner/register') || location.pathname.includes('/food-partner/create')
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -27,7 +27,7 @@ function AppContent() {
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {/* Video Background Section - Only show on auth pages */}
+      {/* Video Background Section - Show on auth pages and create food page */}
       {showVideoBackground && (
         <>
           <video 
