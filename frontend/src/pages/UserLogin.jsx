@@ -53,8 +53,8 @@ const UserLogin = () => {
         console.log('Redirecting to /food-partner/create')
         navigate('/food-partner/create')
       } else {
-        console.log('Redirecting to /')
-        navigate('/')
+        console.log('Redirecting to /home')
+        navigate('/home')
       }
       
     } catch (error) {
