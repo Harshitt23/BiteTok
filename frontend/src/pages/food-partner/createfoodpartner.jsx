@@ -1,10 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
 const CreateFoodPartner = () => {
-  const { theme } = useTheme();
+  let theme = 'light'; // Default fallback
+  try {
+    const themeContext = useTheme();
+    theme = themeContext.theme || 'light';
+  } catch (error) {
+    console.error('Theme context error:', error);
+    theme = 'light';
+  }
+  
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const containerRef = useRef(null);
@@ -13,6 +21,7 @@ const CreateFoodPartner = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    restaurantName: '',
     video: null,
     tags: []
   });
@@ -24,6 +33,24 @@ const CreateFoodPartner = () => {
   const [validationErrors, setValidationErrors] = useState({});
   const [focusedField, setFocusedField] = useState(null);
   const [showTooltip, setShowTooltip] = useState(null);
+  
+  console.log('CreateFoodPartner component rendering...');
+  console.log('Theme:', theme);
+  
+  // Simple fallback if there are any issues
+  if (!theme) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        padding: '20px', 
+        backgroundColor: '#f5f5f5',
+        color: '#333'
+      }}>
+        <h1>Create Food Item</h1>
+        <p>Loading...</p>
+      </div>
+    );
+  }
   
   // Available tags
   const availableTags = [
@@ -134,6 +161,12 @@ const CreateFoodPartner = () => {
       errors.description = 'Description must be at least 10 characters';
     }
     
+    if (!formData.restaurantName.trim()) {
+      errors.restaurantName = 'Restaurant name is required';
+    } else if (formData.restaurantName.trim().length < 2) {
+      errors.restaurantName = 'Restaurant name must be at least 2 characters';
+    }
+    
     if (!formData.video) {
       errors.video = 'Video is required';
     }
@@ -155,10 +188,11 @@ const CreateFoodPartner = () => {
       const submitData = new FormData();
       submitData.append('name', formData.name);
       submitData.append('description', formData.description);
+      submitData.append('restaurantName', formData.restaurantName);
       submitData.append('video', formData.video);
       submitData.append('tags', JSON.stringify(formData.tags));
       
-      const response = await axios.post('http://localhost:3000/api/food/create', submitData, {
+      const response = await axios.post('http://localhost:3000/api/food/', submitData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         },
@@ -172,7 +206,7 @@ const CreateFoodPartner = () => {
       
       // Reset form after animation
       setTimeout(() => {
-        setFormData({ name: '', description: '', video: null, tags: [] });
+        setFormData({ name: '', description: '', restaurantName: '', video: null, tags: [] });
         setPreviewUrl(null);
         setShowSuccess(false);
         if (fileInputRef.current) {
@@ -189,11 +223,33 @@ const CreateFoodPartner = () => {
   };
   
   return (
-    <div className={`create-food-page ${theme}`}>
-      <div className="create-food-container" ref={containerRef}>
+    <div className={`create-food-page ${theme}`} style={{ minHeight: '100vh', padding: '20px' }}>
+      <div className="create-food-container" ref={containerRef} style={{ 
+        backgroundColor: theme === 'dark' ? '#2a2a2a' : '#fff',
+        color: theme === 'dark' ? '#fff' : '#333',
+        minHeight: '80vh'
+      }}>
         <div className="create-food-header">
-          <h1>Create New Food Item</h1>
-          <p>Add a new delicious item to your profile</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div>
+              <h1 style={{ color: theme === 'dark' ? '#fff' : '#333', margin: '0 0 10px 0' }}>Create New Food Item</h1>
+              <p style={{ color: theme === 'dark' ? '#ccc' : '#666', margin: '0' }}>Add a new delicious item to your profile</p>
+            </div>
+            <Link 
+              to="/food-partner/home" 
+              style={{ 
+                textDecoration: 'none',
+                backgroundColor: '#6c757d',
+                color: 'white',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              ← Back to Dashboard
+            </Link>
+          </div>
         </div>
         
         <form className="create-food-form" onSubmit={handleSubmit}>
@@ -301,6 +357,41 @@ const CreateFoodPartner = () => {
               />
               {validationErrors.name && (
                 <div className="error-message">{validationErrors.name}</div>
+              )}
+            </div>
+          </div>
+          
+          {/* Restaurant Name Section */}
+          <div className="form-section">
+            <label className="section-label">
+              Restaurant Name
+              <span 
+                className="tooltip-trigger"
+                onMouseEnter={() => setShowTooltip('restaurantName')}
+                onMouseLeave={() => setShowTooltip(null)}
+              >
+                ℹ️
+              </span>
+              {showTooltip === 'restaurantName' && (
+                <div className="tooltip">
+                  Enter your restaurant or business name that will be displayed with your food items.
+                </div>
+              )}
+            </label>
+            <div className="input-container">
+              <input
+                type="text"
+                name="restaurantName"
+                value={formData.restaurantName}
+                onChange={handleInputChange}
+                onFocus={() => setFocusedField('restaurantName')}
+                onBlur={() => setFocusedField(null)}
+                placeholder="Enter restaurant name (e.g., Spice Garden Restaurant)"
+                className={`food-input ${focusedField === 'restaurantName' ? 'focused' : ''} ${validationErrors.restaurantName ? 'error' : ''}`}
+                required
+              />
+              {validationErrors.restaurantName && (
+                <div className="error-message">{validationErrors.restaurantName}</div>
               )}
             </div>
           </div>

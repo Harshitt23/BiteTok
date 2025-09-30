@@ -210,11 +210,33 @@ function logoutFoodPartner(req, res) {
     });
 }
 
+async function getAllFoodPartners(req, res) {
+    try {
+        console.log("🔍 GET /api/auth/food-partner/all - Request received");
+        
+        const partners = await foodPartnerModel.find({}).select('-password');
+        
+        console.log(`📊 Found ${partners.length} food partners`);
+        
+        res.status(200).json({
+            message: "Food partners fetched successfully",
+            partners
+        });
+        
+    } catch (error) {
+        console.error("❌ Error fetching food partners:", error);
+        res.status(500).json({
+            message: "Internal server error"
+        });
+    }
+}
+
 module.exports = {
     registerUser,
     loginUser,
     logoutUser,
     registerFoodPartner,
     loginFoodPartner,
-    logoutFoodPartner
+    logoutFoodPartner,
+    getAllFoodPartners
 }
