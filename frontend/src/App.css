@@ -258,6 +258,218 @@ body {
   scrollbar-width: none;
 }
 
+/* Create Food Form */
+.create-food-page {
+  min-height: 100vh;
+  background: transparent;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.create-food-container {
+  width: 100%;
+  max-width: 600px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(10px);
+}
+
+.create-food-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.create-food-header h1 {
+  color: var(--text-primary);
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  background: var(--gradient-royal);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.create-food-header p {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.create-food-form {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-label {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* Video Upload Area */
+.video-upload-area {
+  position: relative;
+  width: 100%;
+}
+
+.video-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.video-upload-placeholder {
+  width: 100%;
+  height: 200px;
+  border: 2px dashed var(--input-border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--input-bg);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.video-upload-placeholder:hover {
+  border-color: var(--button-bg);
+  background: rgba(255, 140, 0, 0.1);
+}
+
+.upload-placeholder {
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.upload-icon {
+  font-size: 3rem;
+  margin-bottom: 10px;
+}
+
+.upload-placeholder p {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: var(--text-primary);
+}
+
+.upload-placeholder span {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.video-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+/* Input Fields */
+.food-input,
+.food-textarea {
+  width: 100%;
+  padding: 16px 20px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.food-input:focus,
+.food-textarea:focus {
+  outline: none;
+  border-color: var(--button-bg);
+  box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1);
+}
+
+.food-input::placeholder,
+.food-textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+.food-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* Submit Button */
+.form-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.submit-btn {
+  background: var(--button-bg);
+  color: var(--button-text);
+  border: none;
+  padding: 16px 40px;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: var(--button-hover-bg);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 140, 0, 0.3);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Dark theme adjustments */
+.create-food-page.dark {
+  background: transparent;
+}
+
+.create-food-page.dark .create-food-container {
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+}
+
+/* Light theme adjustments */
+.create-food-page.light {
+  background: transparent;
+}
+
+.create-food-page.light .create-food-container {
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+}
+
+.create-food-page.light .video-upload-placeholder {
+  background: var(--input-bg);
+}
+
 /* Base layout helpers */
 .page {
   min-height: 100dvh;
@@ -289,9 +501,10 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  z-index: -1;
+  z-index: -10;
   opacity: 0;
   transition: opacity 2s ease-in-out;
+  background: #000;
 }
 
 /* Video 1 - First video */
