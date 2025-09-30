@@ -37,4 +37,9 @@ router.delete("/cleanup",
     authMiddleware.authUserMiddleware,
     foodController.deleteDuplicateFoodItems)
 
+/* DELETE /api/food/:id [protected] - Delete specific food item */
+router.delete("/:id",
+    authMiddleware.authFoodPartnerMiddleware,
+    foodController.deleteFoodItem)
+
 module.exports = router;

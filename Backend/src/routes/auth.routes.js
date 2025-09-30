@@ -14,6 +14,7 @@ router.get('/user/logout', authController.logoutUser)
 router.post('/food-partner/register', authController.registerFoodPartner)
 router.post('/food-partner/login', authController.loginFoodPartner)
 router.get('/food-partner/logout', authController.logoutFoodPartner)
+router.get('/food-partner/all', authController.getAllFoodPartners)
 
 
 

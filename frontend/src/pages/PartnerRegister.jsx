@@ -51,7 +51,7 @@ const PartnerRegister = () => {
       })
       
       console.log('Registration successful:', response.data)
-      navigate('/food-partner/create')
+      navigate('/food-partner/home')
       
     } catch (error) {
       console.error('Registration error:', error)
@@ -178,6 +178,36 @@ const PartnerRegister = () => {
           <button className="btn primary" type="submit">Create Partner Account</button>
           
           <p className="login-link">Already a partner? <Link to="/food-partner/login">Sign in</Link></p>
+          
+          <Link to="/food-partner/all" className="btn secondary" style={{ 
+            marginTop: '10px', 
+            background: 'linear-gradient(135deg, rgba(108, 117, 125, 0.8), rgba(73, 80, 87, 0.9))',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            color: 'white', 
+            padding: '12px 24px',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            display: 'block',
+            textAlign: 'center',
+            fontSize: '14px',
+            fontWeight: '600',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
+            transition: 'all 0.3s ease',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+          onMouseOver={(e) => {
+            e.target.style.transform = 'translateY(-2px)';
+            e.target.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
+            e.target.style.background = 'linear-gradient(135deg, rgba(108, 117, 125, 0.9), rgba(73, 80, 87, 1))';
+          }}
+          onMouseOut={(e) => {
+            e.target.style.transform = 'translateY(0)';
+            e.target.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
+            e.target.style.background = 'linear-gradient(135deg, rgba(108, 117, 125, 0.8), rgba(73, 80, 87, 0.9))';
+          }}
+          >View All Food Partners</Link>
         </form>
       </div>
     </div>
