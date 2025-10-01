@@ -1,9 +1,9 @@
-# 🍽️ BiteTok – TikTok vibes but with food.
+# 🍽️ BiteTok – TikTok vibes but with food
 A modern, full-stack food video sharing platform inspired by YouTube Shorts and TikTok, designed specifically for food enthusiasts and culinary creators.
 
 ## 🌟 Overview
 
-Food View is a social media platform where food lovers can discover, share, and interact with mouth-watering food videos. Whether you're a home cook sharing your latest creation or a restaurant showcasing your signature dishes, Food View provides the perfect platform to connect with food enthusiasts worldwide.
+BiteTok is a social media platform where food lovers can discover, share, and interact with mouth-watering food videos. Whether you're a home cook sharing your latest creation or a restaurant showcasing your signature dishes, BiteTok provides the perfect platform to connect with food enthusiasts worldwide.
 
 ## ✨ Key Features
 
@@ -47,23 +47,19 @@ Food View is a social media platform where food lovers can discover, share, and 
 ## 📁 Project Structure
 
 ```
-🍽️ Food View/
-├── 📂 backend/                    # Node.js/Express API server
+🍽️ BiteTok/
+├── 📂 Backend/                    # Node.js/Express API server
 │   ├── 📂 src/
 │   │   ├── 📂 controllers/        # 🎮 API route handlers
 │   │   │   ├── auth.controller.js
-│   │   │   ├── food.controller.js
-│   │   │   └── food-partner.controller.js
+│   │   │   └── food.controller.js
 │   │   ├── 📂 models/            # 🗄️ MongoDB schemas
 │   │   │   ├── user.model.js
 │   │   │   ├── food.model.js
-│   │   │   ├── foodpartner.model.js
-│   │   │   ├── likes.model.js
-│   │   │   └── save.model.js
+│   │   │   └── foodpartner.model.js
 │   │   ├── 📂 routes/            # 🛣️ Express routes
 │   │   │   ├── auth.routes.js
-│   │   │   ├── food.routes.js
-│   │   │   └── food-partner.routes.js
+│   │   │   └── food.routes.js
 │   │   ├── 📂 middlewares/       # 🔐 Authentication middleware
 │   │   │   └── auth.middleware.js
 │   │   ├── 📂 services/          # ☁️ External services
@@ -74,20 +70,34 @@ Food View is a social media platform where food lovers can discover, share, and 
 │   └── server.js                 # 🚀 Server entry point
 ├── 📂 frontend/                  # React/Vite client application
 │   ├── 📂 src/
-│   │   ├── 📂 components/        # 🧩 Reusable React components
-│   │   │   ├── BottomNav.jsx
-│   │   │   └── ReelFeed.jsx
 │   │   ├── 📂 pages/            # 📄 Page components
-│   │   │   ├── 📂 auth/         # Authentication pages
 │   │   │   ├── 📂 general/      # General user pages
-│   │   │   └── 📂 food-partner/ # Food partner pages
+│   │   │   │   └── home.jsx     # Main video feed
+│   │   │   ├── 📂 food-partner/ # Food partner pages
+│   │   │   │   ├── Dashboard.jsx
+│   │   │   │   ├── createfoodpartner.jsx
+│   │   │   │   ├── foodpartnerhome.jsx
+│   │   │   │   ├── profile.jsx
+│   │   │   │   └── AllPartners.jsx
+│   │   │   ├── UserLogin.jsx
+│   │   │   ├── UserRegister.jsx
+│   │   │   ├── PartnerLogin.jsx
+│   │   │   └── PartnerRegister.jsx
 │   │   ├── 📂 routes/           # 🧭 Route configuration
 │   │   │   └── AppRoutes.jsx
+│   │   ├── 📂 contexts/         # 🔄 React contexts
+│   │   │   └── ThemeContext.jsx
 │   │   ├── 📂 styles/           # 🎨 CSS files
-│   │   └── App.jsx
+│   │   │   └── theme.css
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── 📂 public/               # 🎥 Static assets
+│   │   └── 📂 videos/           # Sample video files
+│   │       ├── 📂 horizontal/   # Landscape videos
+│   │       └── 📂 vertical/     # Portrait videos
 │   ├── package.json
 │   └── index.html
-└── 📂 videos/                   # 🎥 Sample video files
+└── README.md
 ```
 
 ## 🚀 Quick Start
@@ -103,13 +113,13 @@ Before you begin, ensure you have the following installed:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Harshitt23/YT-reel-scroll-.git
-   cd food-view
+   git clone https://github.com/Harshitt23/BiteTok.git
+   cd BiteTok
    ```
 
 2. **Install backend dependencies**
    ```bash
-   cd backend
+   cd Backend
    npm install
    ```
 
@@ -121,10 +131,10 @@ Before you begin, ensure you have the following installed:
 
 4. **Environment Configuration**
    
-   Create a `.env` file in the `backend/` directory:
+   Create a `.env` file in the `Backend/` directory:
    ```env
    # Database
-   MONGODB_URI=mongodb://localhost:27017/foodview
+   MONGODB_URI=mongodb://localhost:27017/bitetok
    
    # Authentication
    JWT_SECRET=your_super_secret_jwt_key_here
@@ -141,7 +151,7 @@ Before you begin, ensure you have the following installed:
 
 1. **Start the backend server**
    ```bash
-   cd backend
+   cd Backend
    npm start
    ```
    🌐 Backend will be available at: `http://localhost:3000`
@@ -159,7 +169,7 @@ Before you begin, ensure you have the following installed:
 npm install -g concurrently
 
 # Run both servers simultaneously
-concurrently "cd backend && npm start" "cd frontend && npm run dev"
+concurrently "cd Backend && npm start" "cd frontend && npm run dev"
 ```
 
 ## 🔌 API Documentation
@@ -197,11 +207,15 @@ curl -X POST http://localhost:3000/api/auth/user/register \
   -H "Content-Type: application/json" \
   -d '{
     "fullName": "Harshit Sharma",
-    "email": "Harshit@gmail.com",
+    "email": "harshit@gmail.com",
     "password": "securepassword123"
   }'
 ```
 
+**Get all food videos:**
+```bash
+curl -X GET http://localhost:3000/api/food
+```
 
 ## 🗄️ Database Schema
 
@@ -232,29 +246,11 @@ curl -X POST http://localhost:3000/api/auth/user/register \
 ```javascript
 {
   name: String,         // Food item name (required)
-  video: String,        // Video URL from ImageKit (required)
+  videoUrl: String,     // Video URL from ImageKit (required)
   description: String,  // Food description (optional)
   foodPartner: ObjectId, // Reference to FoodPartner (required)
   likeCount: Number,    // Number of likes (default: 0)
   savesCount: Number    // Number of saves (default: 0)
-}
-```
-
-### ❤️ Likes Model
-```javascript
-{
-  user: ObjectId,       // Reference to User
-  food: ObjectId,       // Reference to Food
-  createdAt: Date       // Like timestamp
-}
-```
-
-### 💾 Saves Model
-```javascript
-{
-  user: ObjectId,       // Reference to User
-  food: ObjectId,       // Reference to Food
-  createdAt: Date       // Save timestamp
 }
 ```
 
@@ -263,16 +259,17 @@ curl -X POST http://localhost:3000/api/auth/user/register \
 ### 🎬 Video Feed System
 - **Vertical Scrolling**: TikTok/Instagram Reels-style interface
 - **Auto-Play**: Videos automatically play when in viewport
-- **Intersection Observer**: Optimized performance with lazy loading
+- **Touch Gestures**: Swipe navigation for mobile devices
 - **Interactive Actions**: Like, save, and comment functionality
 - **Responsive Design**: Mobile-first approach with desktop support
+- **Performance Optimized**: Lazy loading and efficient rendering
 
 ### 🔐 Authentication & Security
 - **Dual Account System**: Separate user and food partner accounts
 - **JWT Authentication**: Secure token-based authentication
 - **Password Security**: bcryptjs hashing with salt rounds
-- **Session Management**: Cookie-based session handling
 - **Protected Routes**: Middleware-based route protection
+- **Session Management**: Secure session handling
 
 ### ☁️ Media Management
 - **ImageKit Integration**: Professional video storage and CDN
@@ -283,10 +280,10 @@ curl -X POST http://localhost:3000/api/auth/user/register \
 
 ### 📱 User Experience
 - **Mobile-First Design**: Optimized for mobile devices
-- **Touch Gestures**: Swipe navigation and interactions
+- **Dark/Light Theme**: Toggle between themes
 - **Loading States**: Smooth loading animations
 - **Error Handling**: User-friendly error messages
-- **Offline Support**: Basic offline functionality
+- **Smooth Animations**: CSS transitions and keyframes
 
 ## 🛠️ Development
 
@@ -323,10 +320,27 @@ npm run lint -- --fix
 ### 🧪 Testing
 ```bash
 # Run backend tests (when implemented)
-cd backend && npm test
+cd Backend && npm test
 
 # Run frontend tests (when implemented)
 cd frontend && npm test
+```
+
+## 🚀 Deployment
+
+### 🌐 Frontend Deployment (Vercel/Netlify)
+```bash
+# Build the frontend
+cd frontend
+npm run build
+
+# Deploy the dist folder to your hosting platform
+```
+
+### 🖥️ Backend Deployment (Railway/Heroku)
+```bash
+# Set environment variables in your hosting platform
+# Deploy the Backend folder
 ```
 
 ## 🤝 Contributing
@@ -355,6 +369,25 @@ We welcome contributions! Here's how you can help:
 - Ensure all tests pass
 - Use meaningful commit messages
 
+## 🐛 Known Issues
+
+- Video loading optimization for large files
+- Mobile touch gesture improvements
+- Performance enhancements for video feed
+
+## 🔮 Future Features
+
+- [ ] Real-time comments system
+- [ ] Push notifications
+- [ ] Advanced search and filtering
+- [ ] Social sharing integration
+- [ ] Analytics dashboard for food partners
+- [ ] Video editing tools
+- [ ] Multi-language support
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
@@ -364,7 +397,15 @@ We welcome contributions! Here's how you can help:
 - **ImageKit** for the professional media management
 - **Vite** for the lightning-fast development experience
 
+## 📞 Contact
+
+**Harshit Sharma**
+- GitHub: [@Harshitt23](https://github.com/Harshitt23)
+- Email: hasrhitr2308@gmail.com
+
+---
 
 <div align="center">
   <p>⭐ Star this repository if you found it helpful!</p>
+  <p>🍽️ Made with ❤️ for food lovers everywhere</p>
 </div>
