@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import api from '../../config/api';
 
 const FoodPartnerHome = () => {
   const { theme } = useTheme();
@@ -16,7 +17,7 @@ const FoodPartnerHome = () => {
     const fetchFoodItems = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:3000/api/food/', {
+        const response = await axios.get(`${api.baseURL}${api.endpoints.foodItems}`, {
           withCredentials: true
         });
         
@@ -38,7 +39,7 @@ const FoodPartnerHome = () => {
       setIsCleaning(true);
       setCleanupMessage('');
       
-      const response = await axios.delete('http://localhost:3000/api/food/cleanup', {
+      const response = await axios.delete(`${api.baseURL}${api.endpoints.foodCleanup}`, {
         withCredentials: true
       });
       
@@ -60,7 +61,7 @@ const FoodPartnerHome = () => {
     try {
       setDeletingId(id);
       
-      const response = await axios.delete(`http://localhost:3000/api/food/${id}`, {
+      const response = await axios.delete(`${api.baseURL}${api.endpoints.foodDelete(id)}`, {
         withCredentials: true
       });
       

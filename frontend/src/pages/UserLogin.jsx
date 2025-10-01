@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import axios from 'axios';
+import api from '../config/api';
 
 const UserLogin = () => {
   const { theme } = useTheme();
@@ -42,7 +43,7 @@ const UserLogin = () => {
     try {
       const endpoint = isFoodPartner ? '/api/auth/food-partner/login' : '/api/auth/user/login'
       
-      const response = await axios.post(`http://localhost:3000${endpoint}`, formData, {
+      const response = await axios.post(`${api.baseURL}${endpoint}`, formData, {
         withCredentials: true
       })
       

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import axios from 'axios'
+import api from '../config/api'
 import { useNavigate } from 'react-router-dom'
 
 
@@ -46,7 +47,7 @@ const PartnerRegister = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/food-partner/register', formData, {
+      const response = await axios.post(`${api.baseURL}${api.endpoints.partnerRegister}`, formData, {
         withCredentials: true
       })
       
