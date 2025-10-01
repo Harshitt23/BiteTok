@@ -1,6 +1,3 @@
-# 🍽️ BiteTok – TikTok vibes but with food
-A modern, full-stack food video sharing platform inspired by YouTube Shorts and TikTok, designed specifically for food enthusiasts and culinary creators.
-
 ## 🌟 Overview
 
 BiteTok is a social media platform where food lovers can discover, share, and interact with mouth-watering food videos. Whether you're a home cook sharing your latest creation or a restaurant showcasing your signature dishes, BiteTok provides the perfect platform to connect with food enthusiasts worldwide.
