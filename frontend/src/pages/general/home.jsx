@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import api from '../../config/api';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -20,7 +21,7 @@ const Home = () => {
     const fetchFoodItems = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:3000/api/food/', {
+        const response = await axios.get(`${api.baseURL}${api.endpoints.foodItems}`, {
           withCredentials: true
         });
         

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import api from '../../config/api';
 
 const AllPartners = () => {
   const { theme } = useTheme();
@@ -13,7 +14,7 @@ const AllPartners = () => {
     const fetchPartners = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:3000/api/auth/food-partner/all', {
+        const response = await axios.get(`${api.baseURL}${api.endpoints.allPartners}`, {
           withCredentials: true
         });
         

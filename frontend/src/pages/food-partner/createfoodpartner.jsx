@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import api from '../../config/api';
 
 const CreateFoodPartner = () => {
   let theme = 'light'; // Default fallback
@@ -192,7 +193,7 @@ const CreateFoodPartner = () => {
       submitData.append('video', formData.video);
       submitData.append('tags', JSON.stringify(formData.tags));
       
-      const response = await axios.post('http://localhost:3000/api/food/', submitData, {
+      const response = await axios.post(`${api.baseURL}${api.endpoints.foodItems}`, submitData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         },

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import axios from 'axios';
+import api from '../config/api';
 import { useNavigate } from 'react-router-dom';
 
 const PartnerLogin = () => {
@@ -40,7 +41,7 @@ const PartnerLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/food-partner/login', formData, {
+      const response = await axios.post(`${api.baseURL}${api.endpoints.partnerLogin}`, formData, {
         withCredentials: true
       })
       
