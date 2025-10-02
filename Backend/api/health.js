@@ -1,8 +1,10 @@
-// Health check endpoint
+require('dotenv').config();
+
 module.exports = async (req, res) => {
     res.status(200).json({
-        status: "OK",
-        service: "bite-tok-backend",
-        timestamp: new Date().toISOString()
+        message: "Health check successful",
+        timestamp: new Date().toISOString(),
+        env: process.env.NODE_ENV || 'development',
+        hasMongoDB: !!process.env.MONGODB_URI
     });
 };
