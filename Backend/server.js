@@ -5,6 +5,15 @@ const connectDB = require('./src/db/db');
 
 connectDB();
 
-app.listen(3000, () => {
-    console.log("server is running on a good oll port 3000");
-})
+// Export app for Vercel, fallback to normal server for local development
+const port = process.env.PORT || 3000;
+
+if (process.env.NODE_ENV === 'production') {
+    // For Vercel deployment
+    module.exports = app;
+} else {
+    // For local development
+    app.listen(port, () => {
+        console.log(`server is running on port ${port}`);
+    });
+}
