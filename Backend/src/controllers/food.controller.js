@@ -1,6 +1,6 @@
 const foodModel = require('../models/food.model');
 const storageService = require('../services/storage.service');
-const { v4: uuid } = require("uuid")
+const { randomUUID } = require('crypto');
 
 
 async function createFood(req, res) {
@@ -30,7 +30,7 @@ async function createFood(req, res) {
 
         // Restaurant name is optional, will use food partner name as fallback
 
-        const fileUploadResult = await storageService.uploadFile(req.file.buffer, uuid())
+        const fileUploadResult = await storageService.uploadFile(req.file.buffer, randomUUID())
 
         const foodItem = await foodModel.create({
             name: req.body.name,
