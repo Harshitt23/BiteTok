@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
-import api from '../../config/api';
+import { apiClient, endpoints } from '../../config/api';
 
 const CreateFoodPartner = () => {
   let theme = 'light'; // Default fallback
@@ -34,24 +33,6 @@ const CreateFoodPartner = () => {
   const [validationErrors, setValidationErrors] = useState({});
   const [focusedField, setFocusedField] = useState(null);
   const [showTooltip, setShowTooltip] = useState(null);
-  
-  console.log('CreateFoodPartner component rendering...');
-  console.log('Theme:', theme);
-  
-  // Simple fallback if there are any issues
-  if (!theme) {
-    return (
-      <div style={{ 
-        minHeight: '100vh', 
-        padding: '20px', 
-        backgroundColor: '#f5f5f5',
-        color: '#333'
-      }}>
-        <h1>Create Food Item</h1>
-        <p>Loading...</p>
-      </div>
-    );
-  }
   
   // Available tags
   const availableTags = [
@@ -189,23 +170,16 @@ const CreateFoodPartner = () => {
       const submitData = new FormData();
       submitData.append('name', formData.name);
       submitData.append('description', formData.description);
-      submitData.append('restaurantName', formData.restaurantName);
       submitData.append('video', formData.video);
-      submitData.append('tags', JSON.stringify(formData.tags));
-      
-      const response = await axios.post(`${api.baseURL}${api.endpoints.foodItems}`, submitData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
-        withCredentials: true
+
+      await apiClient.post(endpoints.feed, submitData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      
-      console.log('Food item created successfully:', response.data);
-      
+
       // Show success animation
       setShowSuccess(true);
-      
-      // Reset form after animation
+
+      // Reset form, then return to dashboard.
       setTimeout(() => {
         setFormData({ name: '', description: '', restaurantName: '', video: null, tags: [] });
         setPreviewUrl(null);
@@ -213,11 +187,15 @@ const CreateFoodPartner = () => {
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
-      }, 2000);
-      
+        navigate('/food-partner/home');
+      }, 1500);
+
     } catch (error) {
-      console.error('Error creating food item:', error);
-      setValidationErrors({ submit: 'Failed to create food item. Please try again.' });
+      if (error.response?.status === 401) {
+        setValidationErrors({ submit: 'Your session expired. Please log in again.' });
+      } else {
+        setValidationErrors({ submit: error.uiMessage || 'Failed to create food item. Please try again.' });
+      }
     } finally {
       setIsUploading(false);
     }

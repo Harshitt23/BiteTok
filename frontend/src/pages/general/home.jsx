@@ -1,558 +1,331 @@
-import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
-import api from '../../config/api';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiClient, endpoints } from '../../config/api';
 import { useTheme } from '../../contexts/ThemeContext';
+
+// Bundled sample reels shown only when the backend feed is empty (e.g. a fresh
+// database) so the landing experience is never blank. These are read-only.
+const DEMO_REELS = [
+  { _id: 'demo-1', video: '/videos/vertical/3139863-hd_1080_1920_30fps.mp4', name: 'Burger & White Sauce Pasta', description: 'Juicy burger with creamy Indian-style white sauce pasta.', foodPartner: { businessName: 'Spice Garden' }, likeCount: 1250, commentCount: 89, saveCount: 0, isDemo: true },
+  { _id: 'demo-2', video: '/videos/vertical/3709159-uhd_2160_4096_25fps.mp4', name: 'Pancakes with Honey', description: 'Fluffy golden pancakes drizzled with sweet honey.', foodPartner: { businessName: 'Delhi Darbar' }, likeCount: 2100, commentCount: 156, saveCount: 0, isDemo: true },
+  { _id: 'demo-3', video: '/videos/vertical/4058071-uhd_2160_4096_25fps.mp4', name: 'Spaghetti', description: 'Classic spaghetti tossed in rich, flavorful sauce.', foodPartner: { businessName: 'Italiano Kitchen' }, likeCount: 890, commentCount: 67, saveCount: 0, isDemo: true },
+  { _id: 'demo-4', video: '/videos/vertical/10200320-hd_2160_3840_25fps.mp4', name: 'Veg Biryani', description: 'Flavorful rice cooked with vegetables and spices.', foodPartner: { businessName: 'Ariz Biryani Valley' }, likeCount: 1850, commentCount: 142, saveCount: 0, isDemo: true },
+  { _id: 'demo-5', video: '/videos/vertical/7141505-uhd_2160_4096_30fps.mp4', name: 'Chocolate Pancakes', description: 'Rich, fluffy chocolate pancakes with a touch of sweetness.', foodPartner: { businessName: 'Choco Heaven' }, likeCount: 2750, commentCount: 198, saveCount: 0, isDemo: true },
+  { _id: 'demo-6', video: '/videos/vertical/8844427-uhd_2160_3840_30fps.mp4', name: 'Homemade Laddoo', description: 'Soft laddoos made with flour, sugar, and ghee.', foodPartner: { businessName: 'Homemade Sweets' }, likeCount: 3200, commentCount: 267, saveCount: 0, isDemo: true },
+];
+
+const formatCount = (n = 0) =>
+  n >= 1000 ? `${(n / 1000).toFixed(n % 1000 >= 100 ? 1 : 0)}k` : `${n}`;
+
+const Reel = ({ item, active, onLike, onSave, onOpenComments }) => {
+  const videoRef = useRef(null);
+
+  // Play only the active reel; pause the rest. Honour autoplay restrictions.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (active) {
+      v.play().catch(() => {});
+    } else {
+      v.pause();
+      v.currentTime = 0;
+    }
+  }, [active]);
+
+  return (
+    <div className="reel-video-container" data-id={item._id} style={{ position: 'relative' }}>
+      <video
+        ref={videoRef}
+        className="reel-video"
+        src={item.video}
+        loop
+        muted
+        playsInline
+        preload="metadata"
+        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+      />
+
+      <div className="video-overlay">
+        <div className="restaurant-info">
+          <h3 className="restaurant-name">{item.foodPartner?.businessName || 'BiteTok'}</h3>
+          <h2 className="food-title">{item.name}</h2>
+          {item.description && (
+            <p className="food-description">
+              {item.description.length > 120 ? `${item.description.slice(0, 120)}…` : item.description}
+            </p>
+          )}
+        </div>
+        <div className="action-buttons">
+          <button className="visit-store-btn">Visit Store</button>
+        </div>
+      </div>
+
+      {/* Like / comment / save rail */}
+      <div className="reel-rail">
+        <button
+          className={`rail-btn ${item.liked ? 'active' : ''}`}
+          onClick={() => onLike(item)}
+          aria-label="Like"
+        >
+          <span className="rail-icon">{item.liked ? '❤️' : '🤍'}</span>
+          <span className="rail-count">{formatCount(item.likeCount)}</span>
+        </button>
+        <button className="rail-btn" onClick={() => onOpenComments(item)} aria-label="Comments">
+          <span className="rail-icon">💬</span>
+          <span className="rail-count">{formatCount(item.commentCount)}</span>
+        </button>
+        <button
+          className={`rail-btn ${item.saved ? 'active' : ''}`}
+          onClick={() => onSave(item)}
+          aria-label="Save"
+        >
+          <span className="rail-icon">{item.saved ? '🔖' : '📑'}</span>
+          <span className="rail-count">{formatCount(item.saveCount)}</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const CommentsPanel = ({ food, onClose, onPosted }) => {
+  const [comments, setComments] = useState([]);
+  const [text, setText] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [posting, setPosting] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { data } = await apiClient.get(endpoints.comments(food._id));
+        if (alive) setComments(data.comments || []);
+      } catch {
+        if (alive) setError('Could not load comments.');
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [food._id]);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!text.trim()) return;
+    setPosting(true);
+    setError('');
+    try {
+      const { data } = await apiClient.post(endpoints.comments(food._id), { text });
+      setComments((prev) => [data.comment, ...prev]);
+      setText('');
+      onPosted?.();
+    } catch (err) {
+      setError(err.response?.status === 401 ? 'Please log in to comment.' : err.uiMessage);
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  return (
+    <div className="comments-backdrop" onClick={onClose}>
+      <div className="comments-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="comments-header">
+          <span>Comments</span>
+          <button className="comments-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="comments-list">
+          {loading ? (
+            <p className="comments-empty">Loading…</p>
+          ) : comments.length === 0 ? (
+            <p className="comments-empty">No comments yet. Be the first!</p>
+          ) : (
+            comments.map((c) => (
+              <div key={c._id} className="comment-item">
+                <strong>{c.user?.fullName || 'User'}</strong>
+                <p>{c.text}</p>
+              </div>
+            ))
+          )}
+        </div>
+        <form className="comments-form" onSubmit={submit}>
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Add a comment…"
+            maxLength={500}
+          />
+          <button type="submit" disabled={posting}>{posting ? '…' : 'Post'}</button>
+        </form>
+        {error && <p className="comments-error">{error}</p>}
+      </div>
+    </div>
+  );
+};
 
 const Home = () => {
   const { theme } = useTheme();
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const navigate = useNavigate();
   const containerRef = useRef(null);
-  const [isScrolling, setIsScrolling] = useState(false);
-  const [foodVideos, setFoodVideos] = useState([]);
+  const [items, setItems] = useState([]);
+  const [activeId, setActiveId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [likes, setLikes] = useState({});
-  const [comments, setComments] = useState({});
-  const [heartAnimations, setHeartAnimations] = useState([]);
+  const [toast, setToast] = useState('');
+  const [commentsFor, setCommentsFor] = useState(null);
 
-  // Fetch food items from backend
+  const showToast = useCallback((msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 2500);
+  }, []);
+
   useEffect(() => {
-    const fetchFoodItems = async () => {
+    let alive = true;
+    (async () => {
       try {
-        setLoading(true);
-        const response = await axios.get(`${api.baseURL}${api.endpoints.foodItems}`, {
-          withCredentials: true
-        });
-        
-        if (response.data && response.data.foodItems) {
-          // Remove duplicates and filter out test items
-          const uniqueItems = response.data.foodItems.filter((item, index, self) => 
-            index === self.findIndex(t => t.name === item.name && t.description === item.description) &&
-            !item.name.toLowerCase().includes('test')
-          );
-          
-          // Transform backend data to match frontend format
-          const transformedVideos = uniqueItems.map((item, index) => ({
-            id: item._id,
-            videoUrl: item.video,
-            title: item.name,
-            description: item.description,
-            restaurantName: item.foodPartner?.businessName || 'Unknown Restaurant',
-            likes: Math.floor(Math.random() * 3000) + 500,
-            comments: Math.floor(Math.random() * 300) + 50
-          }));
-          
-          // Add static videos to show alongside API videos
-          const staticVideos = [
-            {
-              id: 'static-1',
-              videoUrl: '/videos/vertical/3139863-hd_1080_1920_30fps.mp4',
-              title: 'Burger with White Sauce Indian Style pasta',
-              description: 'Juicy burger served with creamy Indian-style white sauce pasta, a perfect fusion of rich flavors and comfort.',
-              restaurantName: 'Spice Garden Restaurant',
-              likes: 1250,
-              comments: 89
-            },
-            {
-              id: 'static-2',
-              videoUrl: '/videos/vertical/3709159-uhd_2160_4096_25fps.mp4',
-              title: 'Pancakes with Honey',
-              description: 'Fluffy golden pancakes drizzled with sweet honey for a simple, classic treat.',
-              restaurantName: 'Delhi Darbar',
-              likes: 2100,
-              comments: 156
-            },
-            {
-              id: 'static-3',
-              videoUrl: '/videos/vertical/4058071-uhd_2160_4096_25fps.mp4',
-              title: 'Spaghetti',
-              description: 'Classic spaghetti tossed in rich, flavorful sauce for a wholesome and comforting meal.',
-              restaurantName: 'Italiano Kitchen',
-              likes: 890,
-              comments: 67
-            },
-            {
-              id: 'static-4',
-              videoUrl: '/videos/vertical/4725784-hd_1080_1920_25fps.mp4',
-              title: 'Pancakes',
-              description: 'Soft, fluffy pancakes served warm for a light and delicious treat.',
-              restaurantName: 'Sweet Dreams Cafe',
-              likes: 3200,
-              comments: 234
-            },
-            {
-              id: 'static-5',
-              videoUrl: '/videos/vertical/10200320-hd_2160_3840_25fps.mp4',
-              title: 'Veg Biryani/Pulao',
-              description: 'Flavorful rice cooked with vegetables and spices, often served with a side of yogurt or raita.',
-              restaurantName: 'Ariz Biryani Valley',
-              likes: 1850,
-              comments: 142
-            },
-            {
-              id: 'static-6',
-              videoUrl: '/videos/vertical/10977367-hd_1080_1920_30fps.mp4',
-              title: 'Naan Preparing',
-              description: 'Freshly prepared naan, soft and fluffy, straight going into tandoor.',
-              restaurantName: 'Ramu Kitchen',
-              likes: 980,
-              comments: 78
-            },
-            {
-              id: 'static-7',
-              videoUrl: '/videos/vertical/7141505-uhd_2160_4096_30fps.mp4',
-              title: 'Chocolate Pancakes',
-              description: 'Rich, fluffy chocolate pancakes topped with a touch of sweetness for the perfect indulgence.',
-              restaurantName: 'Choco Heaven',
-              likes: 2750,
-              comments: 198
-            },
-            {
-              id: 'static-8',
-              videoUrl: '/videos/vertical/8844427-uhd_2160_3840_30fps.mp4',
-              title: 'Homemade Laddoo',
-              description: 'Soft, chewy laddoos made with flour, sugar, and ghee for a sweet and satisfying treat.',
-              restaurantName: 'Homemade Sweets',
-              likes: 3200,
-              comments: 267
-            }
-          ];
-          
-          // Combine API videos with static videos
-          const combinedVideos = [...transformedVideos, ...staticVideos];
-          setFoodVideos(combinedVideos);
-          
-          // Initialize likes and comments state
-          const initialLikes = {};
-          const initialComments = {};
-          combinedVideos.forEach(video => {
-            initialLikes[video.id] = video.likes;
-            initialComments[video.id] = video.comments;
-          });
-          setLikes(initialLikes);
-          setComments(initialComments);
-        }
-      } catch (error) {
-        console.error('Error fetching food items:', error);
-        setError('Failed to load food items');
-        
-        // Fallback to sample data if API fails
-        const fallbackVideos = [
-          {
-            id: 1,
-            videoUrl: '/videos/vertical/3139863-hd_1080_1920_30fps.mp4',
-            title: 'Burger with White Sauce Indian Style pasta',
-            description: 'Juicy burger served with creamy Indian-style white sauce pasta, a perfect fusion of rich flavors and comfort.',
-            restaurantName: 'Spice Garden Restaurant',
-            likes: 1250,
-            comments: 89
-          },
-          {
-            id: 2,
-            videoUrl: '/videos/vertical/3709159-uhd_2160_4096_25fps.mp4',
-            title: 'Pancakes with Honey',
-            description: 'Fluffy golden pancakes drizzled with sweet honey for a simple, classic treat.',
-            restaurantName: 'Delhi Darbar',
-            likes: 2100,
-            comments: 156
-          },
-          {
-            id: 3,
-            videoUrl: '/videos/vertical/4058071-uhd_2160_4096_25fps.mp4',
-            title: 'Spaghetti',
-            description: 'Classic spaghetti tossed in rich, flavorful sauce for a wholesome and comforting meal.',
-            restaurantName: 'Italiano Kitchen',
-            likes: 890,
-            comments: 67
-          },
-          {
-            id: 4,
-            videoUrl: '/videos/vertical/4725784-hd_1080_1920_25fps.mp4',
-            title: 'Pancakes',
-            description: 'Soft, fluffy pancakes served warm for a light and delicious treat.',
-            restaurantName: 'Sweet Dreams Cafe',
-            likes: 3200,
-            comments: 234
-          },
-          {
-            id: 5,
-            videoUrl: '/videos/vertical/10200320-hd_2160_3840_25fps.mp4',
-            title: 'Veg Biryani/Pulao',
-            description: 'Flavorful rice cooked with vegetables and spices, often served with a side of yogurt or raita.',
-            restaurantName: 'Ariz Biryani Valley',
-            likes: 1850,
-            comments: 142
-          },
-          {
-            id: 6,
-            videoUrl: '/videos/vertical/10977367-hd_1080_1920_30fps.mp4',
-            title: 'Naan Preparing',
-            description: 'Freshly prepared naan, soft and fluffy, straight going into tandoor.',
-            restaurantName: 'Ramu Kitchen',
-            likes: 980,
-            comments: 78
-          },
-          {
-            id: 7,
-            videoUrl: '/videos/vertical/7141505-uhd_2160_4096_30fps.mp4',
-            title: 'Chocolate Pancakes',
-            description: 'Rich, fluffy chocolate pancakes topped with a touch of sweetness for the perfect indulgence.',
-            restaurantName: 'Choco Heaven',
-            likes: 2750,
-            comments: 198
-          },
-          {
-            id: 8,
-            videoUrl: '/videos/vertical/8844427-uhd_2160_3840_30fps.mp4',
-            title: 'Homemade Laddoo',
-            description: 'Soft, chewy laddoos made with flour, sugar, and ghee for a sweet and satisfying treat.',
-            restaurantName: 'Homemade Sweets',
-            likes: 3200,
-            comments: 267
-          }
-        ];
-        setFoodVideos(fallbackVideos);
+        const { data } = await apiClient.get(endpoints.feed, { params: { page: 1, limit: 20 } });
+        if (!alive) return;
+        const feed = data.foodItems?.length ? data.foodItems : DEMO_REELS;
+        setItems(feed);
+        setActiveId(feed[0]?._id ?? null);
+      } catch {
+        if (!alive) return;
+        setError('Could not reach the server — showing sample reels.');
+        setItems(DEMO_REELS);
+        setActiveId(DEMO_REELS[0]._id);
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
-    };
-
-    fetchFoodItems();
+    })();
+    return () => { alive = false; };
   }, []);
 
-  const handleScroll = (e) => {
-    if (isScrolling) return;
-    
-    const container = containerRef.current;
-    if (!container) return;
-
-    const scrollTop = container.scrollTop;
-    const videoHeight = window.innerHeight;
-    const newIndex = Math.round(scrollTop / videoHeight);
-    
-    if (newIndex !== currentVideoIndex && newIndex >= 0 && newIndex < foodVideos.length) {
-      setCurrentVideoIndex(newIndex);
-    }
-  };
-
-  const scrollToVideo = (index) => {
-    if (isScrolling) return;
-    
-    setIsScrolling(true);
-    const container = containerRef.current;
-    if (container) {
-      const videoHeight = window.innerHeight;
-      container.scrollTo({
-        top: index * videoHeight,
-        behavior: 'smooth'
-      });
-    }
-    
-    setTimeout(() => setIsScrolling(false), 500);
-  };
-
-  const handleWheel = (e) => {
-    e.preventDefault();
-    
-    if (isScrolling) return;
-    
-    const direction = e.deltaY > 0 ? 1 : -1;
-    const newIndex = currentVideoIndex + direction;
-    
-    if (newIndex >= 0 && newIndex < foodVideos.length) {
-      scrollToVideo(newIndex);
-    }
-  };
-
-  const handleTouchStart = (e) => {
-    const touch = e.touches[0];
-    setTouchStartY(touch.clientY);
-  };
-
-  const handleTouchMove = (e) => {
-    e.preventDefault();
-  };
-
-  const handleTouchEnd = (e) => {
-    const touch = e.changedTouches[0];
-    const touchEndY = touch.clientY;
-    const diff = touchStartY - touchEndY;
-    
-    if (Math.abs(diff) > 50) { // Minimum swipe distance
-      const direction = diff > 0 ? 1 : -1;
-      const newIndex = currentVideoIndex + direction;
-      
-      if (newIndex >= 0 && newIndex < foodVideos.length) {
-        scrollToVideo(newIndex);
-      }
-    }
-  };
-
-  const [touchStartY, setTouchStartY] = useState(0);
-
-  // Debug: Log video URLs
+  // Track which reel is centered in the viewport to drive autoplay.
   useEffect(() => {
-    console.log('Food videos:', foodVideos);
-    foodVideos.forEach(video => {
-      console.log(`Video ${video.id}: ${video.videoUrl}`);
-    });
-  }, []);
+    const root = containerRef.current;
+    if (!root || items.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+            setActiveId(entry.target.getAttribute('data-id'));
+          }
+        });
+      },
+      { root, threshold: [0.6] }
+    );
+    root.querySelectorAll('.reel-video-container').forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [items]);
 
-  // Handle like button
-  const handleLike = (videoId) => {
-    setLikes(prev => ({
-      ...prev,
-      [videoId]: prev[videoId] + 1
-    }));
-
-    // Create heart animation
-    const heartId = Date.now() + Math.random();
-    const newHeart = {
-      id: heartId,
-      videoId: videoId,
-      x: Math.random() * 300 + 100, // Random x position across video width
-      y: Math.random() * 200 + 100  // Random y position in middle area of video
-    };
-
-    setHeartAnimations(prev => [...prev, newHeart]);
-
-    // Remove heart after animation completes
-    setTimeout(() => {
-      setHeartAnimations(prev => prev.filter(heart => heart.id !== heartId));
-    }, 2000);
-  };
-
-  // Handle comment button
-  const handleComment = (videoId) => {
-    setComments(prev => ({
-      ...prev,
-      [videoId]: prev[videoId] + 1
-    }));
-  };
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener('wheel', handleWheel, { passive: false });
-      container.addEventListener('touchstart', handleTouchStart, { passive: false });
-      container.addEventListener('touchmove', handleTouchMove, { passive: false });
-      container.addEventListener('touchend', handleTouchEnd, { passive: false });
-      
-      return () => {
-        container.removeEventListener('wheel', handleWheel);
-        container.removeEventListener('touchstart', handleTouchStart);
-        container.removeEventListener('touchmove', handleTouchMove);
-        container.removeEventListener('touchend', handleTouchEnd);
-      };
+  const requireLogin = (err) => {
+    if (err.response?.status === 401) {
+      showToast('Please log in to continue');
+      setTimeout(() => navigate('/user/login'), 800);
+      return true;
     }
-  }, [currentVideoIndex, isScrolling]);
+    return false;
+  };
 
-  // Show loading state
+  const handleLike = async (item) => {
+    if (item.isDemo) return showToast('Log in and explore real reels to interact');
+    // Optimistic update
+    setItems((prev) =>
+      prev.map((it) =>
+        it._id === item._id
+          ? { ...it, liked: !it.liked, likeCount: it.likeCount + (it.liked ? -1 : 1) }
+          : it
+      )
+    );
+    try {
+      const { data } = await apiClient.post(endpoints.like(item._id));
+      setItems((prev) =>
+        prev.map((it) => (it._id === item._id ? { ...it, liked: data.liked, likeCount: data.likeCount } : it))
+      );
+    } catch (err) {
+      // Revert
+      setItems((prev) =>
+        prev.map((it) =>
+          it._id === item._id
+            ? { ...it, liked: item.liked, likeCount: item.likeCount }
+            : it
+        )
+      );
+      if (!requireLogin(err)) showToast(err.uiMessage);
+    }
+  };
+
+  const handleSave = async (item) => {
+    if (item.isDemo) return showToast('Log in and explore real reels to interact');
+    try {
+      const { data } = await apiClient.post(endpoints.save(item._id));
+      setItems((prev) =>
+        prev.map((it) => (it._id === item._id ? { ...it, saved: data.saved, saveCount: data.saveCount } : it))
+      );
+      showToast(data.saved ? 'Saved' : 'Removed from saved');
+    } catch (err) {
+      if (!requireLogin(err)) showToast(err.uiMessage);
+    }
+  };
+
+  const openComments = (item) => {
+    if (item.isDemo) return showToast('Log in and explore real reels to interact');
+    setCommentsFor(item);
+  };
+
   if (loading) {
     return (
-      <div className={`reel-container ${theme}`} style={{
-        position: 'relative'
-      }}>
+      <div className={`reel-container ${theme}`} style={{ position: 'relative' }}>
         <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading delicious food videos...</p>
+          <div className="loading-spinner" />
+          <p>Loading delicious food reels…</p>
         </div>
       </div>
     );
   }
 
-  // Show error state if no videos available
-  if (foodVideos.length === 0) {
+  if (items.length === 0) {
     return (
-      <div className={`reel-container ${theme}`} style={{
-        position: 'relative'
-      }}>
+      <div className={`reel-container ${theme}`} style={{ position: 'relative' }}>
         <div className="error-container">
           <div className="error-icon">🍽️</div>
-          <h3>No food videos available</h3>
-          <p>{error || 'Check back later for delicious content!'}</p>
+          <h3>No food reels yet</h3>
+          <p>{error || 'Check back soon for delicious content!'}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`reel-container ${theme}`} ref={containerRef} onScroll={handleScroll}>
-      {foodVideos.map((video, index) => (
-        <div key={video.id} className="reel-video-container" style={{ position: 'relative' }}>
-          <video
-            className="reel-video"
-            autoPlay
-            loop
-            muted
-            playsInline
-            style={{ 
-              display: index === currentVideoIndex ? 'block' : 'none',
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain'
-            }}
-            onError={(e) => {
-              console.error(`Video ${video.id} failed to load:`, e);
-              console.error('Video URL:', video.videoUrl);
-            }}
-            onLoadStart={() => {
-              console.log(`Loading video ${video.id}:`, video.videoUrl);
-            }}
-            onCanPlay={() => {
-              console.log(`Video ${video.id} can play:`, video.videoUrl);
-            }}
-            onLoadedData={() => {
-              console.log(`Video ${video.id} loaded data:`, video.videoUrl);
-            }}
-          >
-            <source src={video.videoUrl} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-          
-          {/* Video Overlay */}
-          <div className="video-overlay">
-            {/* Restaurant Info */}
-            <div className="restaurant-info">
-              <h3 className="restaurant-name">{video.restaurantName}</h3>
-              <h2 className="food-title">{video.title}</h2>
-              <p className="food-description">
-                {video.description.length > 120 
-                  ? `${video.description.substring(0, 120)}...` 
-                  : video.description
-                }
-              </p>
-            </div>
-            
-            {/* Action Buttons */}
-            <div className="action-buttons">
-              <button className="visit-store-btn">
-                Visit Store
-              </button>
-            </div>
-            </div>
-            
-          {/* Transparent Like and Comment Buttons - Outside overlay */}
-          <div style={{
-            position: 'absolute',
-            right: '20px',
-            bottom: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '15px',
-            zIndex: 10,
-            pointerEvents: 'auto'
-          }}>
-            {/* Like Button */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              cursor: 'pointer',
-              padding: '8px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              backdropFilter: 'blur(10px)',
-              border: '2px solid rgba(255, 255, 255, 0.2)',
-              transition: 'all 0.3s ease',
-              minWidth: '50px'
-            }}
-            onClick={() => handleLike(video.id)}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-              e.currentTarget.style.transform = 'scale(1.1)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-            }}
-            >
-              <span style={{
-                fontSize: '20px',
-                color: 'white',
-                textShadow: '0 2px 4px rgba(0,0,0,0.8)'
-              }}>❤️</span>
-              <span style={{
-                color: 'white',
-                fontSize: '10px',
-                fontWeight: '600',
-                marginTop: '3px',
-                textShadow: '0 1px 2px rgba(0,0,0,0.8)'
-              }}>
-                {likes[video.id] || video.likes}
-              </span>
-              </div>
+    <>
+      <div className={`reel-container ${theme}`} ref={containerRef}>
+        {items.map((item) => (
+          <Reel
+            key={item._id}
+            item={item}
+            active={item._id === activeId}
+            onLike={handleLike}
+            onSave={handleSave}
+            onOpenComments={openComments}
+          />
+        ))}
+      </div>
 
-            {/* Comment Button */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              cursor: 'pointer',
-              padding: '8px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              backdropFilter: 'blur(10px)',
-              border: '2px solid rgba(255, 255, 255, 0.2)',
-              transition: 'all 0.3s ease',
-              minWidth: '50px'
-            }}
-            onClick={() => handleComment(video.id)}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-              e.currentTarget.style.transform = 'scale(1.1)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-            }}
-            >
-              <span style={{
-                fontSize: '20px',
-                color: 'white',
-                textShadow: '0 2px 4px rgba(0,0,0,0.8)'
-              }}>💬</span>
-              <span style={{
-                color: 'white',
-                fontSize: '10px',
-                fontWeight: '600',
-                marginTop: '3px',
-                textShadow: '0 1px 2px rgba(0,0,0,0.8)'
-              }}>
-                {comments[video.id] || video.comments}
-              </span>
-            </div>
-          </div>
+      {commentsFor && (
+        <CommentsPanel
+          food={commentsFor}
+          onClose={() => setCommentsFor(null)}
+          onPosted={() =>
+            setItems((prev) =>
+              prev.map((it) =>
+                it._id === commentsFor._id ? { ...it, commentCount: it.commentCount + 1 } : it
+              )
+            )
+          }
+        />
+      )}
 
-          {/* Heart Animations */}
-          {heartAnimations
-            .filter(heart => heart.videoId === video.id)
-            .map(heart => (
-              <div
-                key={heart.id}
-                style={{
-                  position: 'absolute',
-                  left: `${heart.x}px`,
-                  top: `${heart.y}px`,
-                  fontSize: '48px',
-                  color: '#ff6b6b',
-                  pointerEvents: 'none',
-                  zIndex: 20,
-                  animation: 'heartFloat 2s ease-out forwards',
-                  textShadow: '0 4px 8px rgba(0,0,0,0.8)'
-                }}
-              >
-                ❤️
-              </div>
-            ))}
-        </div>
-      ))}
-    </div>
+      {toast && <div className="reel-toast">{toast}</div>}
+    </>
   );
 };
 

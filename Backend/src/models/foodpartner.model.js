@@ -1,37 +1,30 @@
 const mongoose = require('mongoose');
 
-const foodPartnerSchema = new mongoose.Schema({
-    businessName: {
-        type: String,
-        required: true
+const foodPartnerSchema = new mongoose.Schema(
+    {
+        businessName: { type: String, required: true, trim: true },
+        contactName: { type: String, required: true, trim: true },
+        phone: { type: String, required: true, trim: true },
+        email: {
+            type: String,
+            required: true,
+            unique: true,
+            lowercase: true,
+            trim: true,
+        },
+        address: { type: String, required: true, trim: true },
+        city: { type: String, required: true, trim: true },
+        password: { type: String, required: true, select: false },
     },
-    contactName: {
-        type: String,
-        required: true
-    },
-    phone: {
-        type: String,
-        required: true
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true
-    },
-    address: {
-        type: String,
-        required: true
-    },
-    city: {
-        type: String,
-        required: true
-    },
-    password: {
-        type: String,
-        required: true
-    }
-}, { timestamps: true })
+    { timestamps: true }
+);
 
-const foodPartnerModel = mongoose.model("foodpartner", foodPartnerSchema);
+foodPartnerSchema.set('toJSON', {
+    transform: (_doc, ret) => {
+        delete ret.password;
+        delete ret.__v;
+        return ret;
+    },
+});
 
-module.exports = foodPartnerModel;
+module.exports = mongoose.model('foodpartner', foodPartnerSchema);

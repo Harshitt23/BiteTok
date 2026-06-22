@@ -1,195 +1,197 @@
-const foodModel = require('../models/food.model');
-const storageService = require('../services/storage.service');
 const { randomUUID } = require('crypto');
+const foodModel = require('../models/food.model');
+const likeModel = require('../models/like.model');
+const saveModel = require('../models/save.model');
+const commentModel = require('../models/comment.model');
+const storageService = require('../services/storage.service');
+const asyncHandler = require('../utils/asyncHandler');
+const ApiError = require('../utils/ApiError');
 
-
-async function createFood(req, res) {
-    try {
-        // Log file upload details
-        console.log("📁 File received:", {
-            fieldname: req.file?.fieldname,
-            originalname: req.file?.originalname,
-            mimetype: req.file?.mimetype,
-            size: req.file?.size
-        })
-        console.log("📝 Form data received:", req.body)
-        
-        // Check if file is uploaded
-        if (!req.file) {
-            return res.status(400).json({
-                message: "Video file is required"
-            })
-        }
-
-        // Check if required fields are provided
-        if (!req.body.name) {
-            return res.status(400).json({
-                message: "Food name is required"
-            })
-        }
-
-        // Restaurant name is optional, will use food partner name as fallback
-
-        const fileUploadResult = await storageService.uploadFile(req.file.buffer, randomUUID())
-
-        const foodItem = await foodModel.create({
-            name: req.body.name,
-            description: req.body.description,
-            video: fileUploadResult.url,
-            foodPartner: req.foodPartner._id
-        })
-
-        const response = {
-            message: "food created successfully",
-            food: foodItem
-        }
-        
-        // Log the response to terminal
-        console.log("✅ Food created successfully:", JSON.stringify(response, null, 2))
-        
-        res.status(201).json(response)
-
-    } catch (error) {
-        console.error("Error creating food:", error)
-        res.status(500).json({
-            message: "Internal server error"
-        })
+/**
+ * Adds `liked` / `saved` booleans to a list of food items for the given user.
+ * Done with two batched queries instead of N per item.
+ */
+async function decorateWithUserState(items, userId) {
+    if (!userId || items.length === 0) {
+        return items.map((it) => ({ ...it, liked: false, saved: false }));
     }
+    const ids = items.map((it) => it._id);
+    const [liked, saved] = await Promise.all([
+        likeModel.find({ user: userId, food: { $in: ids } }).distinct('food'),
+        saveModel.find({ user: userId, food: { $in: ids } }).distinct('food'),
+    ]);
+    const likedSet = new Set(liked.map(String));
+    const savedSet = new Set(saved.map(String));
+    return items.map((it) => ({
+        ...it,
+        liked: likedSet.has(String(it._id)),
+        saved: savedSet.has(String(it._id)),
+    }));
 }
 
-async function getFoodItems(req, res) {
-    try {
-        // Debug: Log what we receive
-        console.log("🔍 GET /api/food - Request received")
-        console.log("🍪 Cookies:", req.cookies)
-        console.log("👤 User from middleware:", req.user)
-        
-        const foodItems = await foodModel.find({}).populate('foodPartner', 'businessName email')
-        
-        const response = {
-            message: "Food items fetched successfully",
-            foodItems
-        }
-        
-        console.log("📋 Food items found:", foodItems.length)
-        console.log("📊 Food items details:")
-        foodItems.forEach((item, index) => {
-            console.log(`  ${index + 1}. ${item.name} - Video: ${item.video.substring(0, 50)}...`)
-        })
-        console.log("✅ GET /api/food response:", JSON.stringify(response, null, 2))
-        
-        res.status(200).json(response)
-    } catch (error) {
-        console.error("❌ Error fetching food items:", error)
-        res.status(500).json({
-            message: "Internal server error"
-        })
-    }
-}
+// --------------------------------------------------------------- Create -----
 
-async function deleteDuplicateFoodItems(req, res) {
-    try {
-        console.log("🧹 Starting duplicate cleanup...")
-        
-        // Find all food items
-        const allFoodItems = await foodModel.find({})
-        console.log(`📊 Found ${allFoodItems.length} total food items`)
-        
-        // Group by name and description to find duplicates
-        const grouped = {}
-        allFoodItems.forEach(item => {
-            const key = `${item.name}-${item.description}`
-            if (!grouped[key]) {
-                grouped[key] = []
-            }
-            grouped[key].push(item)
-        })
-        
-        let duplicatesToDelete = []
-        let uniqueItems = []
-        
-        // Find duplicates (keep the first one, delete the rest)
-        Object.values(grouped).forEach(group => {
-            if (group.length > 1) {
-                uniqueItems.push(group[0]) // Keep the first one
-                duplicatesToDelete.push(...group.slice(1)) // Delete the rest
-            } else {
-                uniqueItems.push(group[0])
-            }
-        })
-        
-        console.log(`✅ Unique items to keep: ${uniqueItems.length}`)
-        console.log(`🗑️ Duplicates to delete: ${duplicatesToDelete.length}`)
-        
-        if (duplicatesToDelete.length > 0) {
-            // Delete duplicates
-            const deleteIds = duplicatesToDelete.map(item => item._id)
-            await foodModel.deleteMany({ _id: { $in: deleteIds } })
-            console.log(`✅ Deleted ${duplicatesToDelete.length} duplicate items`)
-        }
-        
-        res.status(200).json({
-            message: "Duplicate cleanup completed",
-            uniqueItems: uniqueItems.length,
-            duplicatesDeleted: duplicatesToDelete.length
-        })
-        
-    } catch (error) {
-        console.error("❌ Error cleaning duplicates:", error)
-        res.status(500).json({
-            message: "Internal server error"
-        })
-    }
-}
+const createFood = asyncHandler(async (req, res) => {
+    if (!req.file) throw ApiError.badRequest('A video file is required');
 
-async function deleteFoodItem(req, res) {
-    try {
-        const { id } = req.params;
-        
-        console.log(`🗑️ DELETE /api/food/${id} - Request received`);
-        console.log("🍪 Cookies:", req.cookies);
-        console.log("👤 User from middleware:", req.user);
-        
-        // Find the food item
-        const foodItem = await foodModel.findById(id).populate('foodPartner');
-        
-        if (!foodItem) {
-            return res.status(404).json({
-                message: "Food item not found"
-            });
-        }
-        
-        // Check if the user is the owner of this food item
-        if (foodItem.foodPartner._id.toString() !== req.foodPartner._id.toString()) {
-            return res.status(403).json({
-                message: "You can only delete your own food items"
-            });
-        }
-        
-        // Delete the food item
-        await foodModel.findByIdAndDelete(id);
-        
-        console.log(`✅ Food item deleted: ${foodItem.name}`);
-        
-        res.status(200).json({
-            message: "Food item deleted successfully",
-            deletedItem: {
-                id: foodItem._id,
-                name: foodItem.name
-            }
-        });
-        
-    } catch (error) {
-        console.error("❌ Error deleting food item:", error);
-        res.status(500).json({
-            message: "Internal server error"
-        });
+    const uploaded = await storageService.uploadVideo(req.file.buffer, randomUUID());
+
+    const food = await foodModel.create({
+        name: req.body.name,
+        description: req.body.description || '',
+        video: uploaded.url,
+        videoFileId: uploaded.fileId,
+        thumbnail: uploaded.thumbnailUrl,
+        foodPartner: req.foodPartner._id,
+    });
+
+    res.status(201).json({
+        success: true,
+        message: 'Food created successfully',
+        food,
+    });
+});
+
+// ----------------------------------------------------------------- Feed -----
+
+const getFeed = asyncHandler(async (req, res) => {
+    const { page, limit } = req.query;
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
+        foodModel
+            .find()
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .populate('foodPartner', 'businessName city address phone')
+            .lean(),
+        foodModel.estimatedDocumentCount(),
+    ]);
+
+    const decorated = await decorateWithUserState(items, req.user?._id);
+
+    res.status(200).json({
+        success: true,
+        page,
+        limit,
+        total,
+        hasMore: skip + items.length < total,
+        foodItems: decorated,
+    });
+});
+
+const getFoodById = asyncHandler(async (req, res) => {
+    const food = await foodModel
+        .findById(req.params.id)
+        .populate('foodPartner', 'businessName city address phone')
+        .lean();
+    if (!food) throw ApiError.notFound('Food item not found');
+
+    const [decorated] = await decorateWithUserState([food], req.user?._id);
+    res.status(200).json({ success: true, food: decorated });
+});
+
+const getPartnerFood = asyncHandler(async (req, res) => {
+    const items = await foodModel
+        .find({ foodPartner: req.foodPartner._id })
+        .sort({ createdAt: -1 })
+        .lean();
+    res.status(200).json({ success: true, count: items.length, foodItems: items });
+});
+
+const getSavedFood = asyncHandler(async (req, res) => {
+    const saved = await saveModel
+        .find({ user: req.user._id })
+        .sort({ createdAt: -1 })
+        .populate({
+            path: 'food',
+            populate: { path: 'foodPartner', select: 'businessName city' },
+        })
+        .lean();
+    const foodItems = saved.map((s) => s.food).filter(Boolean);
+    res.status(200).json({ success: true, count: foodItems.length, foodItems });
+});
+
+// ------------------------------------------------------- Likes / Saves ------
+
+const toggleLike = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    if (!(await foodModel.exists({ _id: id }))) {
+        throw ApiError.notFound('Food item not found');
     }
-}
+
+    const existing = await likeModel.findOne({ user: req.user._id, food: id });
+    let liked;
+    if (existing) {
+        await existing.deleteOne();
+        await foodModel.updateOne({ _id: id }, { $inc: { likeCount: -1 } });
+        liked = false;
+    } else {
+        await likeModel.create({ user: req.user._id, food: id });
+        await foodModel.updateOne({ _id: id }, { $inc: { likeCount: 1 } });
+        liked = true;
+    }
+
+    const food = await foodModel.findById(id).select('likeCount').lean();
+    res.status(200).json({ success: true, liked, likeCount: food.likeCount });
+});
+
+const toggleSave = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    if (!(await foodModel.exists({ _id: id }))) {
+        throw ApiError.notFound('Food item not found');
+    }
+
+    const existing = await saveModel.findOne({ user: req.user._id, food: id });
+    let saved;
+    if (existing) {
+        await existing.deleteOne();
+        await foodModel.updateOne({ _id: id }, { $inc: { saveCount: -1 } });
+        saved = false;
+    } else {
+        await saveModel.create({ user: req.user._id, food: id });
+        await foodModel.updateOne({ _id: id }, { $inc: { saveCount: 1 } });
+        saved = true;
+    }
+
+    const food = await foodModel.findById(id).select('saveCount').lean();
+    res.status(200).json({ success: true, saved, saveCount: food.saveCount });
+});
+
+// --------------------------------------------------------------- Delete -----
+
+const deleteFood = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const food = await foodModel.findById(id);
+    if (!food) throw ApiError.notFound('Food item not found');
+
+    if (food.foodPartner.toString() !== req.foodPartner._id.toString()) {
+        throw ApiError.forbidden('You can only delete your own food items');
+    }
+
+    await Promise.all([
+        likeModel.deleteMany({ food: id }),
+        saveModel.deleteMany({ food: id }),
+        commentModel.deleteMany({ food: id }),
+        storageService.deleteFile(food.videoFileId),
+    ]);
+    await food.deleteOne();
+
+    res.status(200).json({
+        success: true,
+        message: 'Food item deleted successfully',
+        deletedId: id,
+    });
+});
 
 module.exports = {
     createFood,
-    getFoodItems,
-    deleteDuplicateFoodItems,
-    deleteFoodItem
-}
+    getFeed,
+    getFoodById,
+    getPartnerFood,
+    getSavedFood,
+    toggleLike,
+    toggleSave,
+    deleteFood,
+};

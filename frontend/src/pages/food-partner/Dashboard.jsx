@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Link } from 'react-router-dom';
-import axios from 'axios';
-import api from '../../config/api';
+import { Link, useNavigate } from 'react-router-dom';
+import { apiClient, endpoints } from '../../config/api';
 
 const Dashboard = () => {
   let theme = 'light'; // Default fallback
@@ -14,56 +13,40 @@ const Dashboard = () => {
     theme = 'light';
   }
   
-  const [isCleaning, setIsCleaning] = useState(false);
+  const navigate = useNavigate();
   const [cleanupMessage, setCleanupMessage] = useState('');
   const [foodItems, setFoodItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
 
-  console.log('Dashboard component rendering...');
-  console.log('Theme:', theme);
-  console.log('Loading:', loading);
-  console.log('Food items:', foodItems);
-  
-  // Fetch food items on component mount
+  // Fetch only this partner's own food items.
   useEffect(() => {
     const fetchFoodItems = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${api.baseURL}${api.endpoints.foodItems}`, {
-          withCredentials: true
-        });
-        
-        if (response.data && response.data.foodItems) {
-          setFoodItems(response.data.foodItems);
-        }
+        const { data } = await apiClient.get(endpoints.myFood);
+        setFoodItems(data.foodItems || []);
       } catch (error) {
-        console.error('Error fetching food items:', error);
+        if (error.response?.status === 401) {
+          navigate('/food-partner/login');
+          return;
+        }
+        setCleanupMessage('❌ Could not load your food items.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchFoodItems();
-  }, []);
-  
-  const handleCleanupDuplicates = async () => {
+  }, [navigate]);
+
+  const handleLogout = async () => {
     try {
-      setIsCleaning(true);
-      setCleanupMessage('');
-      
-      const response = await axios.delete(`${api.baseURL}${api.endpoints.foodCleanup}`, {
-        withCredentials: true
-      });
-      
-      setCleanupMessage(`✅ Cleanup completed! ${response.data.duplicatesDeleted} duplicates removed, ${response.data.uniqueItems} unique items kept.`);
-      
-    } catch (error) {
-      console.error('Error cleaning duplicates:', error);
-      setCleanupMessage('❌ Failed to clean duplicates. Please try again.');
-    } finally {
-      setIsCleaning(false);
+      await apiClient.post(endpoints.partnerLogout);
+    } catch {
+      /* ignore — clear client state regardless */
     }
+    navigate('/food-partner/login');
   };
 
   const handleDeleteFoodItem = async (id, name) => {
@@ -73,19 +56,11 @@ const Dashboard = () => {
 
     try {
       setDeletingId(id);
-      
-      const response = await axios.delete(`${api.baseURL}${api.endpoints.foodDelete(id)}`, {
-        withCredentials: true
-      });
-      
-      // Remove the deleted item from the list
+      await apiClient.delete(endpoints.foodDelete(id));
       setFoodItems(prev => prev.filter(item => item._id !== id));
-      
       setCleanupMessage(`✅ "${name}" deleted successfully!`);
-      
     } catch (error) {
-      console.error('Error deleting food item:', error);
-      setCleanupMessage(`❌ Failed to delete "${name}". Please try again.`);
+      setCleanupMessage(`❌ Failed to delete "${name}". ${error.uiMessage || ''}`);
     } finally {
       setDeletingId(null);
     }
@@ -168,57 +143,18 @@ const Dashboard = () => {
             ➕ Add New Food Item
           </Link>
           
-          <button 
-            onClick={handleCleanupDuplicates}
-            disabled={isCleaning}
+          <button
+            onClick={handleLogout}
             style={{
-              background: isCleaning ? '#6c757d' : 'linear-gradient(135deg, #FF9800, #F57C00)',
-              color: 'white',
-              border: 'none',
-              padding: '20px',
-              borderRadius: '12px',
-              fontSize: '18px',
-              fontWeight: '600',
-              cursor: isCleaning ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 15px rgba(255, 152, 0, 0.3)',
-              transition: 'transform 0.2s ease'
-            }}
-            onMouseOver={(e) => !isCleaning && (e.target.style.transform = 'translateY(-2px)')}
-            onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
-          >
-            {isCleaning ? '🧹 Cleaning...' : '🧹 Clean Duplicates'}
-          </button>
-          
-          <button 
-            style={{
-              background: 'linear-gradient(135deg, #2196F3, #1976D2)',
-              color: 'white',
-              border: 'none',
-              padding: '20px',
-              borderRadius: '12px',
-              fontSize: '18px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              boxShadow: '0 4px 15px rgba(33, 150, 243, 0.3)',
-              transition: 'transform 0.2s ease'
-            }}
-            onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
-            onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
-          >
-            📋 View Orders
-          </button>
-          
-          <Link 
-            to="/food-partner/login" 
-            style={{ 
-              textDecoration: 'none',
               background: 'linear-gradient(135deg, #f44336, #d32f2f)',
               color: 'white',
+              border: 'none',
               padding: '20px',
               borderRadius: '12px',
               textAlign: 'center',
               fontSize: '18px',
               fontWeight: '600',
+              cursor: 'pointer',
               boxShadow: '0 4px 15px rgba(244, 67, 54, 0.3)',
               transition: 'transform 0.2s ease'
             }}
@@ -226,7 +162,7 @@ const Dashboard = () => {
             onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
           >
             🚪 Logout
-          </Link>
+          </button>
         </div>
 
         {/* Food Items List */}

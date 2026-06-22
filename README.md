@@ -1,408 +1,186 @@
-## 🌟 Overview
+# 🍽️ BiteTok
 
-BiteTok is a social media platform where food lovers can discover, share, and interact with mouth-watering food videos. Whether you're a home cook sharing your latest creation or a restaurant showcasing your signature dishes, BiteTok provides the perfect platform to connect with food enthusiasts worldwide.
+A TikTok/Reels-style vertical video platform for food. Restaurants and home
+cooks ("food partners") upload short food videos; users scroll an infinite feed
+and like, save, and comment on the dishes they love.
 
-## ✨ Key Features
+[![CI](https://github.com/Harshitt23/BiteTok/actions/workflows/ci.yml/badge.svg)](../../actions)
 
-### 👥 For Food Enthusiasts
-- 🎬 **Vertical Video Feed**: Seamless scrolling experience with auto-play videos
-- ❤️ **Interactive Actions**: Like, save, and share your favorite food content
-- 🔍 **Discover**: Explore diverse cuisines and cooking styles
-- 👤 **User Profiles**: Create and manage your personal food journey
-- 🔐 **Secure Authentication**: Safe and reliable user registration
+---
 
-### 🏪 For Food Partners & Restaurants
-- 📹 **Content Creation**: Upload and showcase your culinary masterpieces
-- 📊 **Analytics**: Track engagement with likes and saves
-- 📞 **Direct Contact**: Connect with customers through integrated contact info
-- 🏷️ **Brand Presence**: Build your restaurant's digital presence
-- 📱 **Mobile-First**: Optimized for mobile viewing and interaction
+## ✨ Features
 
-## 🛠️ Tech Stack
+**For users**
+- 🎬 Vertical, scroll-snapped video feed with autoplay (IntersectionObserver)
+- ❤️ Real likes, 🔖 saves, and 💬 comments (persisted, per-user)
+- 🔐 Secure cookie-based authentication
+- 🌙 Light/dark theme
 
-### 🔧 Backend Technologies
-| Technology | Purpose | Version |
-|------------|---------|---------|
-| **Node.js** | Runtime environment | 18+ |
-| **Express.js** | Web framework | 5.1.0 |
-| **MongoDB** | Database | Latest |
-| **Mongoose** | ODM for MongoDB | 8.17.1 |
-| **JWT** | Authentication | 9.0.2 |
-| **ImageKit** | Media storage & CDN | 6.0.0 |
-| **Multer** | File upload handling | 2.0.2 |
-| **bcryptjs** | Password hashing | 3.0.2 |
+**For food partners**
+- 📹 Upload food videos (stored on ImageKit CDN)
+- 📊 Dashboard to manage your own items
+- 🗑️ Delete items (also cleans up likes/saves/comments and the CDN file)
 
-### 🎨 Frontend Technologies
-| Technology | Purpose | Version |
-|------------|---------|---------|
-| **React** | UI library | 19.1.1 |
-| **Vite** | Build tool & dev server | 7.1.2 |
-| **React Router** | Client-side routing | 7.8.0 |
-| **Axios** | HTTP client | 1.11.0 |
-| **CSS3** | Styling & animations | Latest |
+---
 
-## 📁 Project Structure
+## 🛠️ Tech stack
+
+| Layer     | Tech                                                                 |
+| --------- | ------------------------------------------------------------------- |
+| Frontend  | React 18, Vite 7, React Router 6, Axios                             |
+| Backend   | Node.js 18+, Express 4, Mongoose 8                                  |
+| Database  | MongoDB                                                              |
+| Auth      | JWT (httpOnly cookies) + bcrypt                                     |
+| Media     | ImageKit (upload + CDN + thumbnails)                                |
+| Security  | helmet, CORS allow-list, express-rate-limit, Zod validation        |
+| Tests/CI  | Vitest + Supertest + mongodb-memory-server, GitHub Actions         |
+
+---
+
+## 📁 Project structure
 
 ```
-🍽️ BiteTok/
-├── 📂 Backend/                    # Node.js/Express API server
-│   ├── 📂 src/
-│   │   ├── 📂 controllers/        # 🎮 API route handlers
-│   │   │   ├── auth.controller.js
-│   │   │   └── food.controller.js
-│   │   ├── 📂 models/            # 🗄️ MongoDB schemas
-│   │   │   ├── user.model.js
-│   │   │   ├── food.model.js
-│   │   │   └── foodpartner.model.js
-│   │   ├── 📂 routes/            # 🛣️ Express routes
-│   │   │   ├── auth.routes.js
-│   │   │   └── food.routes.js
-│   │   ├── 📂 middlewares/       # 🔐 Authentication middleware
-│   │   │   └── auth.middleware.js
-│   │   ├── 📂 services/          # ☁️ External services
-│   │   │   └── storage.service.js
-│   │   └── 📂 db/               # 🗃️ Database connection
-│   │       └── db.js
-│   ├── package.json
-│   └── server.js                 # 🚀 Server entry point
-├── 📂 frontend/                  # React/Vite client application
-│   ├── 📂 src/
-│   │   ├── 📂 pages/            # 📄 Page components
-│   │   │   ├── 📂 general/      # General user pages
-│   │   │   │   └── home.jsx     # Main video feed
-│   │   │   ├── 📂 food-partner/ # Food partner pages
-│   │   │   │   ├── Dashboard.jsx
-│   │   │   │   ├── createfoodpartner.jsx
-│   │   │   │   ├── foodpartnerhome.jsx
-│   │   │   │   ├── profile.jsx
-│   │   │   │   └── AllPartners.jsx
-│   │   │   ├── UserLogin.jsx
-│   │   │   ├── UserRegister.jsx
-│   │   │   ├── PartnerLogin.jsx
-│   │   │   └── PartnerRegister.jsx
-│   │   ├── 📂 routes/           # 🧭 Route configuration
-│   │   │   └── AppRoutes.jsx
-│   │   ├── 📂 contexts/         # 🔄 React contexts
-│   │   │   └── ThemeContext.jsx
-│   │   ├── 📂 styles/           # 🎨 CSS files
-│   │   │   └── theme.css
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── 📂 public/               # 🎥 Static assets
-│   │   └── 📂 videos/           # Sample video files
-│   │       ├── 📂 horizontal/   # Landscape videos
-│   │       └── 📂 vertical/     # Portrait videos
-│   ├── package.json
-│   └── index.html
-└── README.md
+BiteTok/
+├── Backend/                     # Express API (deploys to Railway/Render)
+│   ├── src/
+│   │   ├── app.js               # Express app factory (used by server + tests)
+│   │   ├── config/env.js        # Zod-validated environment (fail-fast)
+│   │   ├── controllers/         # auth, food, comment
+│   │   ├── middlewares/         # auth, validate, upload, error
+│   │   ├── models/              # user, foodpartner, food, like, save, comment
+│   │   ├── routes/              # auth.routes, food.routes
+│   │   ├── services/            # storage.service (ImageKit)
+│   │   ├── utils/               # ApiError, asyncHandler, token
+│   │   └── validators/          # Zod schemas
+│   ├── tests/                   # Vitest + Supertest integration tests
+│   ├── server.js                # Entry point (connect DB + listen)
+│   └── Dockerfile
+├── frontend/                    # React + Vite SPA (deploys to Vercel/Netlify)
+│   └── src/
+│       ├── config/api.js        # Axios instance + endpoint map
+│       ├── contexts/            # ThemeContext
+│       ├── pages/               # auth, general (feed), food-partner
+│       └── routes/AppRoutes.jsx
+├── railway.json                 # Backend deploy config
+└── .github/workflows/ci.yml
 ```
 
-## 🚀 Quick Start
+---
 
-### 📋 Prerequisites
+## 🚀 Local development
 
-Before you begin, ensure you have the following installed:
-- **Node.js** (v18 or higher) - [Download here](https://nodejs.org/)
-- **MongoDB** (local or Atlas) - [Get started here](https://www.mongodb.com/)
-- **ImageKit Account** (for media storage) - [Sign up here](https://imagekit.io/)
+### Prerequisites
+- Node.js 18+
+- MongoDB (local or [Atlas](https://www.mongodb.com/))
+- An [ImageKit](https://imagekit.io/) account (for uploads)
 
-### ⚡ Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Harshitt23/BiteTok.git
-   cd BiteTok
-   ```
-
-2. **Install backend dependencies**
-   ```bash
-   cd Backend
-   npm install
-   ```
-
-3. **Install frontend dependencies**
-   ```bash
-   cd ../frontend
-   npm install
-   ```
-
-4. **Environment Configuration**
-   
-   Create a `.env` file in the `Backend/` directory:
-   ```env
-   # Database
-   MONGODB_URI=mongodb://localhost:27017/bitetok
-   
-   # Authentication
-   JWT_SECRET=your_super_secret_jwt_key_here
-   
-   # ImageKit Configuration
-   IMAGEKIT_PUBLIC_KEY=your_imagekit_public_key
-   IMAGEKIT_PRIVATE_KEY=your_imagekit_private_key
-   IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_imagekit_id
-   ```
-
-### 🎯 Running the Application
-
-**Option 1: Run both servers separately**
-
-1. **Start the backend server**
-   ```bash
-   cd Backend
-   npm start
-   ```
-   🌐 Backend will be available at: `http://localhost:3000`
-
-2. **Start the frontend development server** (in a new terminal)
-   ```bash
-   cd frontend
-   npm run dev
-   ```
-   🎨 Frontend will be available at: `http://localhost:5173`
-
-**Option 2: Use concurrently (recommended)**
+### 1. Install
 ```bash
-# Install concurrently globally
-npm install -g concurrently
-
-# Run both servers simultaneously
-concurrently "cd Backend && npm start" "cd frontend && npm run dev"
+npm run install:all      # installs root, Backend, and frontend
 ```
 
-## 🔌 API Documentation
-
-### 🔐 Authentication Endpoints
-
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| `POST` | `/api/auth/user/register` | Register new user account | ❌ |
-| `POST` | `/api/auth/user/login` | User login | ❌ |
-| `POST` | `/api/auth/food-partner/register` | Register food partner account | ❌ |
-| `POST` | `/api/auth/food-partner/login` | Food partner login | ❌ |
-
-### 🍽️ Food Endpoints
-
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| `GET` | `/api/food` | Get all food videos | ❌ |
-| `POST` | `/api/food` | Create new food video | ✅ |
-| `PUT` | `/api/food/:id/like` | Like/unlike a video | ✅ |
-| `PUT` | `/api/food/:id/save` | Save/unsave a video | ✅ |
-
-### 🏪 Food Partner Endpoints
-
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| `GET` | `/api/food-partner/:id` | Get food partner profile | ❌ |
-| `PUT` | `/api/food-partner/:id` | Update food partner profile | ✅ |
-
-### 📝 Example API Usage
-
-**Register a new user:**
+### 2. Configure environment
 ```bash
-curl -X POST http://localhost:3000/api/auth/user/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "fullName": "Harshit Sharma",
-    "email": "harshit@gmail.com",
-    "password": "securepassword123"
-  }'
+cp Backend/.env.example Backend/.env
+cp frontend/.env.example frontend/.env
 ```
-
-**Get all food videos:**
+Fill in `Backend/.env` (see the table below). Generate a JWT secret with:
 ```bash
-curl -X GET http://localhost:3000/api/food
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
-## 🗄️ Database Schema
+| Variable                | Description                                      |
+| ----------------------- | ------------------------------------------------ |
+| `NODE_ENV`              | `development` / `production`                      |
+| `PORT`                  | API port (default 3000)                          |
+| `CORS_ORIGIN`           | Comma-separated allowed frontend origins         |
+| `MONGODB_URI`           | MongoDB connection string                        |
+| `JWT_SECRET`            | Long random string                               |
+| `JWT_EXPIRES_IN`        | e.g. `7d`                                         |
+| `IMAGEKIT_PUBLIC_KEY`   | ImageKit public key                              |
+| `IMAGEKIT_PRIVATE_KEY`  | ImageKit private key                             |
+| `IMAGEKIT_URL_ENDPOINT` | ImageKit URL endpoint                            |
 
-### 👤 User Model
-```javascript
-{
-  fullName: String,     // User's full name (required)
-  email: String,        // Unique email address (required)
-  password: String,     // Hashed password (required)
-  createdAt: Date,      // Account creation timestamp
-  updatedAt: Date       // Last update timestamp
-}
-```
-
-### 🏪 Food Partner Model
-```javascript
-{
-  name: String,         // Business/restaurant name (required)
-  contactName: String,  // Contact person name (required)
-  phone: String,        // Phone number (required)
-  address: String,      // Business address (required)
-  email: String,        // Unique email address (required)
-  password: String      // Hashed password (required)
-}
-```
-
-### 🍽️ Food Model
-```javascript
-{
-  name: String,         // Food item name (required)
-  videoUrl: String,     // Video URL from ImageKit (required)
-  description: String,  // Food description (optional)
-  foodPartner: ObjectId, // Reference to FoodPartner (required)
-  likeCount: Number,    // Number of likes (default: 0)
-  savesCount: Number    // Number of saves (default: 0)
-}
-```
-
-## 🎯 Features in Detail
-
-### 🎬 Video Feed System
-- **Vertical Scrolling**: TikTok/Instagram Reels-style interface
-- **Auto-Play**: Videos automatically play when in viewport
-- **Touch Gestures**: Swipe navigation for mobile devices
-- **Interactive Actions**: Like, save, and comment functionality
-- **Responsive Design**: Mobile-first approach with desktop support
-- **Performance Optimized**: Lazy loading and efficient rendering
-
-### 🔐 Authentication & Security
-- **Dual Account System**: Separate user and food partner accounts
-- **JWT Authentication**: Secure token-based authentication
-- **Password Security**: bcryptjs hashing with salt rounds
-- **Protected Routes**: Middleware-based route protection
-- **Session Management**: Secure session handling
-
-### ☁️ Media Management
-- **ImageKit Integration**: Professional video storage and CDN
-- **File Upload**: Multer-based multipart form handling
-- **Video Optimization**: Automatic compression and format conversion
-- **Global CDN**: Fast video delivery worldwide
-- **Thumbnail Generation**: Automatic preview image creation
-
-### 📱 User Experience
-- **Mobile-First Design**: Optimized for mobile devices
-- **Dark/Light Theme**: Toggle between themes
-- **Loading States**: Smooth loading animations
-- **Error Handling**: User-friendly error messages
-- **Smooth Animations**: CSS transitions and keyframes
-
-## 🛠️ Development
-
-### 🔧 Backend Development
+### 3. Run
 ```bash
-# Start development server
-npm start
-
-# Install new dependencies
-npm install <package-name>
-
-# Check for security vulnerabilities
-npm audit
+npm run dev              # runs backend + frontend together
 ```
+- API → http://localhost:3000
+- App → http://localhost:5173
 
-### 🎨 Frontend Development
+---
+
+## 🔌 API reference
+
+Base URL: `/api`. Auth via httpOnly `token` cookie or `Authorization: Bearer <token>`.
+
+### Auth
+| Method | Endpoint                              | Auth | Description              |
+| ------ | ------------------------------------- | ---- | ------------------------ |
+| POST   | `/auth/user/register`                 | —    | Register a user          |
+| POST   | `/auth/user/login`                    | —    | User login               |
+| POST   | `/auth/user/logout`                   | —    | Logout                   |
+| POST   | `/auth/food-partner/register`         | —    | Register a food partner  |
+| POST   | `/auth/food-partner/login`            | —    | Food partner login       |
+| GET    | `/auth/food-partner/all`              | —    | List food partners       |
+| GET    | `/auth/me`                            | ✅   | Current principal        |
+
+### Food
+| Method | Endpoint                  | Auth      | Description                         |
+| ------ | ------------------------- | --------- | ----------------------------------- |
+| GET    | `/food?page=&limit=`      | optional  | Public paginated feed               |
+| GET    | `/food/:id`               | optional  | Single item                         |
+| GET    | `/food/mine`              | partner   | The partner's own items             |
+| GET    | `/food/saved`             | user      | The user's saved items              |
+| POST   | `/food`                   | partner   | Create item (multipart `video`)     |
+| DELETE | `/food/:id`               | partner   | Delete own item                     |
+| POST   | `/food/:id/like`          | user      | Toggle like                         |
+| POST   | `/food/:id/save`          | user      | Toggle save                         |
+| GET    | `/food/:id/comments`      | —         | List comments (paginated)           |
+| POST   | `/food/:id/comments`      | user      | Add comment                         |
+| DELETE | `/food/comments/:id`      | user      | Delete own comment                  |
+
+### Health
+`GET /api/health` → `{ success, database }`
+
+---
+
+## 🧪 Testing
+
 ```bash
-# Start development server with hot reload
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build locally
-npm run preview
-
-# Run ESLint for code quality
-npm run lint
-
-# Fix ESLint issues automatically
-npm run lint -- --fix
+cd Backend && npm test       # Vitest + Supertest against in-memory MongoDB
 ```
 
-### 🧪 Testing
-```bash
-# Run backend tests (when implemented)
-cd Backend && npm test
+CI (GitHub Actions) runs backend lint + tests and frontend lint + build on every
+push and PR.
 
-# Run frontend tests (when implemented)
-cd frontend && npm test
-```
+---
 
-## 🚀 Deployment
+## ☁️ Deployment
 
-### 🌐 Frontend Deployment (Vercel/Netlify)
-```bash
-# Build the frontend
-cd frontend
-npm run build
+**Backend → Railway / Render**
+- Uses `railway.json` (Nixpacks). Set the env vars from the table above in the
+  dashboard. Healthcheck: `/api/health`.
+- Or build the included `Backend/Dockerfile`.
 
-# Deploy the dist folder to your hosting platform
-```
+**Frontend → Vercel / Netlify**
+- Root directory: `frontend`. Build: `npm run build`, output: `dist`.
+- Set `VITE_API_URL` to the deployed backend URL.
+- `frontend/vercel.json` handles SPA routing.
 
-### 🖥️ Backend Deployment (Railway/Heroku)
-```bash
-# Set environment variables in your hosting platform
-# Deploy the Backend folder
-```
+> Cross-site cookies: in production the API sets `SameSite=None; Secure` cookies,
+> so the backend must be HTTPS and `CORS_ORIGIN` must list the exact frontend
+> origin(s).
 
-## 🤝 Contributing
+---
 
-We welcome contributions! Here's how you can help:
+## 🔒 Security notes
+- Secrets live only in `.env` (gitignored) — never commit them.
+- Passwords are bcrypt-hashed and never serialized.
+- JWTs expire; cookies are httpOnly.
+- Inputs validated with Zod; rate limiting on all `/api` routes (stricter on auth).
 
-1. **Fork the repository**
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-3. **Commit your changes**
-   ```bash
-   git commit -m 'Add some amazing feature'
-   ```
-4. **Push to the branch**
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-5. **Open a Pull Request**
-
-### 📝 Contribution Guidelines
-- Follow the existing code style
-- Add tests for new features
-- Update documentation as needed
-- Ensure all tests pass
-- Use meaningful commit messages
-
-## 🐛 Known Issues
-
-- Video loading optimization for large files
-- Mobile touch gesture improvements
-- Performance enhancements for video feed
-
-## 🔮 Future Features
-
-- [ ] Real-time comments system
-- [ ] Push notifications
-- [ ] Advanced search and filtering
-- [ ] Social sharing integration
-- [ ] Analytics dashboard for food partners
-- [ ] Video editing tools
-- [ ] Multi-language support
+---
 
 ## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **React Team** for the amazing frontend framework
-- **Express.js** for the robust backend framework
-- **MongoDB** for the flexible database solution
-- **ImageKit** for the professional media management
-- **Vite** for the lightning-fast development experience
-
-## 📞 Contact
-
-**Harshit Sharma**
-- GitHub: [@Harshitt23](https://github.com/Harshitt23)
-- Email: hasrhitr2308@gmail.com
-
------
-
-<div align="center">
-  <p>⭐ Star this repository if you found it helpful!</p>
-  <p>🍽️ Made with ❤️ for food lovers everywhere</p>
-</div>
+MIT

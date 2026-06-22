@@ -1,45 +1,57 @@
 const express = require('express');
-const foodController = require("../controllers/food.controller")
-const authMiddleware = require("../middlewares/auth.middleware")             
+const foodController = require('../controllers/food.controller');
+const commentController = require('../controllers/comment.controller');
+const validate = require('../middlewares/validate.middleware');
+const { uploadVideo } = require('../middlewares/upload.middleware');
+const {
+    requireUser,
+    requireFoodPartner,
+    optionalAuth,
+} = require('../middlewares/auth.middleware');
+const {
+    createFoodSchema,
+    foodIdParamSchema,
+    feedQuerySchema,
+} = require('../validators/food.validator');
+const {
+    createCommentSchema,
+    listCommentsSchema,
+    commentIdParamSchema,
+} = require('../validators/comment.validator');
+
 const router = express.Router();
-const multer = require('multer');
 
+// Public feed (likes/saves flags added when a valid token is present).
+router.get('/', optionalAuth, validate(feedQuerySchema), foodController.getFeed);
 
-const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: {
-        fileSize: 100 * 1024 * 1024, // 100MB limit
-    },
-    fileFilter: (req, file, cb) => {
-        // Accept video files
-        if (file.mimetype.startsWith('video/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Only video files are allowed'), false);
-        }
-    }
-})
+// Food partner: own items
+router.get('/mine', requireFoodPartner, foodController.getPartnerFood);
 
-/* POST /api/food/ [protected]*/
-router.post('/',
-    authMiddleware.authFoodPartnerMiddleware, 
-    upload.single("video"),
-    foodController.createFood)
+// User: saved items
+router.get('/saved', requireUser, foodController.getSavedFood);
 
+// Create (food partner only)
+router.post(
+    '/',
+    requireFoodPartner,
+    uploadVideo.single('video'),
+    validate(createFoodSchema),
+    foodController.createFood
+);
 
-/* GET /api/food/ [protected] */
-router.get("/",
-    authMiddleware.authUserMiddleware,
-    foodController.getFoodItems)
+// Single item
+router.get('/:id', optionalAuth, validate(foodIdParamSchema), foodController.getFoodById);
 
-/* DELETE /api/food/cleanup [protected] - Remove duplicate food items */
-router.delete("/cleanup",
-    authMiddleware.authUserMiddleware,
-    foodController.deleteDuplicateFoodItems)
+// Likes / saves (users)
+router.post('/:id/like', requireUser, validate(foodIdParamSchema), foodController.toggleLike);
+router.post('/:id/save', requireUser, validate(foodIdParamSchema), foodController.toggleSave);
 
-/* DELETE /api/food/:id [protected] - Delete specific food item */
-router.delete("/:id",
-    authMiddleware.authFoodPartnerMiddleware,
-    foodController.deleteFoodItem)
+// Comments
+router.get('/:id/comments', validate(listCommentsSchema), commentController.listComments);
+router.post('/:id/comments', requireUser, validate(createCommentSchema), commentController.addComment);
+router.delete('/comments/:id', requireUser, validate(commentIdParamSchema), commentController.deleteComment);
+
+// Delete (owner food partner only)
+router.delete('/:id', requireFoodPartner, validate(foodIdParamSchema), foodController.deleteFood);
 
 module.exports = router;

@@ -6,7 +6,6 @@ import PartnerRegister from '../pages/PartnerRegister';
 import PartnerLogin from '../pages/PartnerLogin';
 import Home from '../pages/general/home';
 import CreateFoodPartner from '../pages/food-partner/createfoodpartner';
-import FoodPartnerHome from '../pages/food-partner/foodpartnerhome';
 import Dashboard from '../pages/food-partner/Dashboard';
 import AllPartners from '../pages/food-partner/AllPartners';
 
