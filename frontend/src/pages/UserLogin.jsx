@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
-import axios from 'axios';
-import api from '../config/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const UserLogin = () => {
   const { theme } = useTheme();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const cardRef = useRef(null);
   const [isFoodPartner, setIsFoodPartner] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -40,36 +42,15 @@ const UserLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setSubmitting(true)
+    setErrorMsg('')
     try {
-      const endpoint = isFoodPartner ? '/api/auth/food-partner/login' : '/api/auth/user/login'
-      
-      const response = await axios.post(`${api.baseURL}${endpoint}`, formData, {
-        withCredentials: true
-      })
-      
-      console.log('Login successful:', response.data)
-      console.log('isFoodPartner:', isFoodPartner)
-      // Redirect based on user type
-      if (isFoodPartner) {
-        console.log('Redirecting to /food-partner/home')
-        navigate('/food-partner/home')
-      } else {
-        console.log('Redirecting to /home')
-        navigate('/home')
-      }
-      
+      await login(isFoodPartner, formData)
+      navigate(isFoodPartner ? '/food-partner/home' : '/home')
     } catch (error) {
-      console.error('Login error:', error)
-      if (error.response) {
-        console.error('Error response:', error.response.data)
-        alert(`Login failed: ${error.response.data.message || 'Unknown error'}`)
-      } else if (error.request) {
-        console.error('No response received:', error.request)
-        alert('Login failed: No response from server')
-      } else {
-        console.error('Error:', error.message)
-        alert(`Login failed: ${error.message}`)
-      }
+      setErrorMsg(error.uiMessage || 'Login failed. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
   }
   
@@ -124,8 +105,12 @@ const UserLogin = () => {
             />
           </div>
 
+          {errorMsg && <p className="auth-error" role="alert">{errorMsg}</p>}
+
           <div className="actions">
-            <button className="btn" type="submit">Log in</button>
+            <button className="btn" type="submit" disabled={submitting}>
+              {submitting ? 'Logging in…' : 'Log in'}
+            </button>
             <Link to="/user/register" className="btn secondary">Don't have an account? Register</Link>
             <Link to="/food-partner/all" className="btn secondary" style={{ 
               marginTop: '10px', 

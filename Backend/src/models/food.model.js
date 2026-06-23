@@ -7,6 +7,7 @@ const foodSchema = new mongoose.Schema(
         video: { type: String, required: true },
         videoFileId: { type: String, default: '' },
         thumbnail: { type: String, default: '' },
+        tags: { type: [String], default: [], index: true },
         foodPartner: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'foodpartner',

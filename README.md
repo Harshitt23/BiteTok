@@ -128,7 +128,7 @@ Base URL: `/api`. Auth via httpOnly `token` cookie or `Authorization: Bearer <to
 ### Food
 | Method | Endpoint                  | Auth      | Description                         |
 | ------ | ------------------------- | --------- | ----------------------------------- |
-| GET    | `/food?page=&limit=`      | optional  | Public paginated feed               |
+| GET    | `/food?page=&limit=&search=&city=&tag=` | optional | Public feed (paginated + filters) |
 | GET    | `/food/:id`               | optional  | Single item                         |
 | GET    | `/food/mine`              | partner   | The partner's own items             |
 | GET    | `/food/saved`             | user      | The user's saved items              |
@@ -149,6 +149,7 @@ Base URL: `/api`. Auth via httpOnly `token` cookie or `Authorization: Bearer <to
 
 ```bash
 cd Backend && npm test       # Vitest + Supertest against in-memory MongoDB
+cd Backend && npm run seed   # populate demo partners + food (idempotent)
 ```
 
 CI (GitHub Actions) runs backend lint + tests and frontend lint + build on every

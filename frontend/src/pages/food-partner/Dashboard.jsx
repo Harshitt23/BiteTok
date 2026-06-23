@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiClient, endpoints } from '../../config/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Dashboard = () => {
   let theme = 'light'; // Default fallback
@@ -14,6 +15,7 @@ const Dashboard = () => {
   }
   
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [cleanupMessage, setCleanupMessage] = useState('');
   const [foodItems, setFoodItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,11 +43,7 @@ const Dashboard = () => {
   }, [navigate]);
 
   const handleLogout = async () => {
-    try {
-      await apiClient.post(endpoints.partnerLogout);
-    } catch {
-      /* ignore — clear client state regardless */
-    }
+    await logout();
     navigate('/food-partner/login');
   };
 

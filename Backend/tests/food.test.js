@@ -130,3 +130,34 @@ describe('Food — likes, saves, comments', () => {
         expect(res.status).toBe(401);
     });
 });
+
+describe('Food — search & filters', () => {
+    it('filters the feed by search term and tag', async () => {
+        const token = await registerPartner();
+        await request(app)
+            .post('/api/food')
+            .set('Authorization', `Bearer ${token}`)
+            .field('name', 'Spicy Paneer Tikka')
+            .field('description', 'smoky and hot')
+            .field('tags', JSON.stringify(['spicy', 'vegetarian']))
+            .attach('video', Buffer.from('x'), 'a.mp4');
+        await request(app)
+            .post('/api/food')
+            .set('Authorization', `Bearer ${token}`)
+            .field('name', 'Chocolate Cake')
+            .field('description', 'sweet')
+            .field('tags', JSON.stringify(['dessert']))
+            .attach('video', Buffer.from('x'), 'b.mp4');
+
+        const search = await request(app).get('/api/food?search=paneer');
+        expect(search.body.foodItems).toHaveLength(1);
+        expect(search.body.foodItems[0].name).toBe('Spicy Paneer Tikka');
+
+        const byTag = await request(app).get('/api/food?tag=dessert');
+        expect(byTag.body.foodItems).toHaveLength(1);
+        expect(byTag.body.foodItems[0].name).toBe('Chocolate Cake');
+
+        const all = await request(app).get('/api/food');
+        expect(all.body.total).toBe(2);
+    });
+});

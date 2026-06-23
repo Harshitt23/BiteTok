@@ -9,6 +9,7 @@
     "dev": "nodemon server.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "seed": "node scripts/seed.js",
     "lint": "eslint ."
   },
   "dependencies": {

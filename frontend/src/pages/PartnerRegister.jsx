@@ -1,15 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
-import axios from 'axios'
-import api from '../config/api'
+import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
 
 const PartnerRegister = () => {
   const { theme } = useTheme()
+  const { register } = useAuth()
   const navigate = useNavigate()
   const cardRef = useRef(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
   const [formData, setFormData] = useState({
     businessName: '',
     contactName: '',
@@ -46,26 +48,20 @@ const PartnerRegister = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setSubmitting(true)
+    setErrorMsg('')
     try {
-      const response = await axios.post(`${api.baseURL}${api.endpoints.partnerRegister}`, formData, {
-        withCredentials: true
-      })
-      
-      console.log('Registration successful:', response.data)
+      await register(true, formData)
       navigate('/food-partner/home')
-      
     } catch (error) {
-      console.error('Registration error:', error)
-      if (error.response) {
-        console.error('Error response:', error.response.data)
-        alert(`Registration failed: ${error.response.data.message || 'Unknown error'}`)
-      } else if (error.request) {
-        console.error('No response received:', error.request)
-        alert('Registration failed: No response from server')
-      } else {
-        console.error('Error:', error.message)
-        alert(`Registration failed: ${error.message}`)
-      }
+      const details = error.response?.data?.details
+      setErrorMsg(
+        details?.length
+          ? details.map((d) => d.message).join(', ')
+          : error.uiMessage || 'Registration failed. Please try again.'
+      )
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -176,7 +172,11 @@ const PartnerRegister = () => {
             />
           </div>
 
-          <button className="btn primary" type="submit">Create Partner Account</button>
+          {errorMsg && <p className="auth-error" role="alert">{errorMsg}</p>}
+
+          <button className="btn primary" type="submit" disabled={submitting}>
+            {submitting ? 'Creating…' : 'Create Partner Account'}
+          </button>
           
           <p className="login-link">Already a partner? <Link to="/food-partner/login">Sign in</Link></p>
           

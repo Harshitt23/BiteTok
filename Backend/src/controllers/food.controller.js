@@ -1,11 +1,25 @@
 const { randomUUID } = require('crypto');
 const foodModel = require('../models/food.model');
+const foodPartnerModel = require('../models/foodpartner.model');
 const likeModel = require('../models/like.model');
 const saveModel = require('../models/save.model');
 const commentModel = require('../models/comment.model');
 const storageService = require('../services/storage.service');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/ApiError');
+
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function parseTags(raw) {
+    if (!raw) return [];
+    try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed.filter((t) => typeof t === 'string') : [];
+    } catch {
+        // Allow a plain comma-separated string too.
+        return String(raw).split(',').map((t) => t.trim()).filter(Boolean);
+    }
+}
 
 /**
  * Adds `liked` / `saved` booleans to a list of food items for the given user.
@@ -39,6 +53,7 @@ const createFood = asyncHandler(async (req, res) => {
     const food = await foodModel.create({
         name: req.body.name,
         description: req.body.description || '',
+        tags: parseTags(req.body.tags),
         video: uploaded.url,
         videoFileId: uploaded.fileId,
         thumbnail: uploaded.thumbnailUrl,
@@ -55,18 +70,39 @@ const createFood = asyncHandler(async (req, res) => {
 // ----------------------------------------------------------------- Feed -----
 
 const getFeed = asyncHandler(async (req, res) => {
-    const { page, limit } = req.query;
+    const { page, limit, search, city, tag } = req.query;
     const skip = (page - 1) * limit;
+
+    // Build filter from optional search/city/tag params.
+    const filter = {};
+    const and = [];
+
+    if (tag) filter.tags = tag;
+
+    if (city) {
+        const partnerIds = await foodPartnerModel
+            .find({ city: new RegExp(`^${escapeRegex(city)}$`, 'i') })
+            .distinct('_id');
+        filter.foodPartner = { $in: partnerIds };
+    }
+
+    if (search) {
+        const rx = new RegExp(escapeRegex(search), 'i');
+        const partnerIds = await foodPartnerModel.find({ businessName: rx }).distinct('_id');
+        and.push({ $or: [{ name: rx }, { description: rx }, { foodPartner: { $in: partnerIds } }] });
+    }
+
+    if (and.length) filter.$and = and;
 
     const [items, total] = await Promise.all([
         foodModel
-            .find()
+            .find(filter)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .populate('foodPartner', 'businessName city address phone')
             .lean(),
-        foodModel.estimatedDocumentCount(),
+        foodModel.countDocuments(filter),
     ]);
 
     const decorated = await decorateWithUserState(items, req.user?._id);

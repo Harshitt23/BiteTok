@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
-import axios from 'axios';
-import api from '../config/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const UserRegister = () => {
   const { theme } = useTheme();
+  const { register } = useAuth();
   const navigate = useNavigate();
   const cardRef = useRef(null);
   const [isFoodPartner, setIsFoodPartner] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -60,40 +62,21 @@ const UserRegister = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setSubmitting(true)
+    setErrorMsg('')
     try {
-      const endpoint = isFoodPartner ? '/api/auth/food-partner/register' : '/api/auth/user/register'
       const data = isFoodPartner ? partnerFormData : formData
-      
-      const response = await axios.post(`${api.baseURL}${endpoint}`, data, {
-        withCredentials: true
-      })
-      
-      console.log('Registration successful:', response.data)
-      console.log('isFoodPartner:', isFoodPartner)
-      // Redirect based on user type
-      if (isFoodPartner) {
-        console.log('Redirecting to /food-partner/home')
-        navigate('/food-partner/home')
-      } else {
-        console.log('Redirecting to /home')
-        navigate('/home')
-      }
-      
+      await register(isFoodPartner, data)
+      navigate(isFoodPartner ? '/food-partner/home' : '/home')
     } catch (error) {
-      console.error('Registration error:', error)
-      if (error.response) {
-        // Server responded with error status
-        console.error('Error response:', error.response.data)
-        alert(`Registration failed: ${error.response.data.message || 'Unknown error'}`)
-      } else if (error.request) {
-        // Request was made but no response received
-        console.error('No response received:', error.request)
-        alert('Registration failed: No response from server')
-      } else {
-        // Something else happened
-        console.error('Error:', error.message)
-        alert(`Registration failed: ${error.message}`)
-      }
+      const details = error.response?.data?.details
+      setErrorMsg(
+        details?.length
+          ? details.map((d) => d.message).join(', ')
+          : error.uiMessage || 'Registration failed. Please try again.'
+      )
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -256,8 +239,12 @@ const UserRegister = () => {
             />
           </div>
 
+          {errorMsg && <p className="auth-error" role="alert">{errorMsg}</p>}
+
           <div className="actions">
-            <button className="btn" type="submit">Create account</button>
+            <button className="btn" type="submit" disabled={submitting}>
+              {submitting ? 'Creating…' : 'Create account'}
+            </button>
             <Link to="/user/login" className="btn secondary">Already have an account? Sign in</Link>
             <Link to="/food-partner/all" className="btn secondary" style={{ 
               marginTop: '10px', 

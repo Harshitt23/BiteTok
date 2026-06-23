@@ -4,6 +4,7 @@ import './App.css'
 import './styles/theme.css'
 import AppRoutes from './routes/AppRoutes'
 import { ThemeContext } from './contexts/ThemeContext'
+import { AuthProvider } from './contexts/AuthContext'
 
 function AppContent() {
   const [theme, setTheme] = useState(() => {
@@ -83,7 +84,9 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </BrowserRouter>
   )
 }
